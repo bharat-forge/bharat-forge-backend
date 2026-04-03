@@ -1,0 +1,20 @@
+import { pgEnum } from 'drizzle-orm/pg-core';
+
+export const roleEnum = pgEnum('role', ['ADMIN', 'DEALER', 'USER']);
+export const userStatusEnum = pgEnum('user_status', ['ACTIVE', 'SUSPENDED_PURCHASES', 'BLOCKED']);
+export const orderStatusEnum = pgEnum('order_status', ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED']);
+export const paymentStatusEnum = pgEnum('payment_status', ['PENDING', 'COMPLETED', 'FAILED']);
+export const refundStatusEnum = pgEnum('refund_status', ['NONE', 'INITIATED', 'PROCESSING', 'COMPLETED', 'FAILED']);
+export const dealerStatusEnum = pgEnum('dealer_status', ['PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED_FULL', 'SUSPENDED_PURCHASES']);
+export const otpTypeEnum = pgEnum('otp_type', ['REGISTER', 'LOGIN', 'FORGOT_PASSWORD']);
+export const categoryStatusEnum = pgEnum('category_status', ['ACTIVE', 'DISABLED', 'ARCHIVED', 'DELETED']);
+export const productStatusEnum = pgEnum('product_status', ['ACTIVE', 'DISABLED', 'ARCHIVED', 'DELETED']);
+export const verificationTypeEnum = pgEnum('verification_type', ['FILE', 'TEXT', 'NUMBER']);
+export const submissionStatusEnum = pgEnum('submission_status', ['PENDING', 'APPROVED', 'REJECTED', 'UPDATE_REQUESTED']);
+export const blueprintStatusEnum = pgEnum('blueprint_status', ['ACTIVE', 'DISABLED']);
+export const articleStatusEnum = pgEnum('article_status', ['DRAFT', 'PUBLISHED', 'ARCHIVED']);
+export const contentStatusEnum = pgEnum('content_status', ['ACTIVE', 'DISABLED']);
+export const voteTypeEnum = pgEnum('vote_type', ['LIKE', 'DISLIKE']);
+export const authorizationStatusEnum = pgEnum('authorization_status', ['PENDING', 'APPROVED', 'REJECTED', 'REVOKED']);
+export const ticketStatusEnum = pgEnum('ticket_status', ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']);
+export const messageDeliveryStatusEnum = pgEnum('message_delivery_status', ['SENT', 'DELIVERED', 'READ']);

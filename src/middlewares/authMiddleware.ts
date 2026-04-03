@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import User from '../models/User';
+import { db } from '../configs/db';
+import { users } from '../db/schema';
+import { eq } from 'drizzle-orm';
 
 export interface AuthRequest extends Request {
   user?: any;
@@ -8,11 +10,20 @@ export interface AuthRequest extends Request {
 
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   let token;
+
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as any;
-      req.user = await User.findById(decoded.userId).select('-otp -otpExpires');
+
+      const userRecords = await db.select().from(users).where(eq(users.id, decoded.id));
+
+      if (userRecords.length === 0) {
+        res.status(401).json({ message: 'Not authorized, user not found' });
+        return;
+      }
+
+      req.user = userRecords[0];
       next();
     } catch (error) {
       res.status(401).json({ message: 'Not authorized, token failed' });

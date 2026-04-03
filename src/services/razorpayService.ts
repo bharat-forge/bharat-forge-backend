@@ -1,10 +1,5 @@
-import Razorpay from 'razorpay';
+import { razorpayInstance } from '../configs/razorpay';
 import crypto from 'crypto';
-
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID as string,
-  key_secret: process.env.RAZORPAY_KEY_SECRET as string,
-});
 
 export const createRazorpayOrder = async (amount: number, receipt: string) => {
   const options = {
@@ -12,7 +7,7 @@ export const createRazorpayOrder = async (amount: number, receipt: string) => {
     currency: 'INR',
     receipt,
   };
-  return await razorpay.orders.create(options);
+  return await razorpayInstance.orders.create(options);
 };
 
 export const verifyRazorpaySignature = (

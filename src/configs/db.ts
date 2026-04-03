@@ -1,12 +1,10 @@
-import mongoose from 'mongoose';
-import { logger } from '../utils/logger';
+import './env';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
+import * as schema from '../db/schema';
 
-export const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGO_URI as string);
-    logger.info(`MongoDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    logger.error('MongoDB connection error:', error);
-    process.exit(1);
-  }
-};
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+export const db = drizzle(pool, { schema });
