@@ -22,7 +22,7 @@ export const getSearchBlueprints = async (req: Request, res: Response): Promise<
 
 export const getDynamicOptions = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { categoryId } = req.params;
+    const { categoryId } = req.params as { [key: string]: string };
     const { currentSelections, nextField } = req.body;
 
     const selectionsJSON = currentSelections ? JSON.stringify(currentSelections) : '{}';
@@ -53,7 +53,7 @@ export const getDynamicOptions = async (req: Request, res: Response): Promise<vo
 
 export const findMatchingProducts = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { categoryId } = req.params;
+    const { categoryId } = req.params as { [key: string]: string };
     const { selections } = req.body;
 
     const selectionsJSON = selections ? JSON.stringify(selections) : '{}';

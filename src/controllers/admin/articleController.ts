@@ -120,7 +120,7 @@ export const createArticle = async (req: AuthRequest, res: Response): Promise<vo
 
 export const updateArticle = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { [key: string]: string };
     const { title, slug, content, status, categoryIds } = req.body;
 
     const currentArticle = await db.select().from(articles).where(eq(articles.id, id));
@@ -159,7 +159,7 @@ export const updateArticle = async (req: Request, res: Response): Promise<void> 
 
 export const updateArticleStatus = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { [key: string]: string };
     const { status } = req.body;
 
     const currentArticle = await db.select().from(articles).where(eq(articles.id, id));
@@ -183,7 +183,7 @@ export const updateArticleStatus = async (req: Request, res: Response): Promise<
 
 export const getArticleComments = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { [key: string]: string };
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const offset = (page - 1) * limit;
@@ -222,7 +222,7 @@ export const getArticleComments = async (req: Request, res: Response): Promise<v
 
 export const toggleCommentStatus = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { commentId } = req.params;
+    const { commentId } = req.params as { [key: string]: string };
     const { status } = req.body;
 
     await db.update(articleComments)
@@ -237,7 +237,7 @@ export const toggleCommentStatus = async (req: Request, res: Response): Promise<
 
 export const deleteComment = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { commentId } = req.params;
+    const { commentId } = req.params as { [key: string]: string };
     await db.delete(articleComments).where(eq(articleComments.id, commentId));
     res.status(200).json({ message: 'Comment permanently deleted' });
   } catch (error) {

@@ -86,7 +86,8 @@ export const getPaginatedCategories = async (req: Request, res: Response): Promi
 
 export const getCategoryById = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
+
 
         const result = await db.select({
             category: categories,
@@ -110,7 +111,7 @@ export const getCategoryById = async (req: Request, res: Response): Promise<void
 
 export const updateCategoryDetails = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
         const { name, slug, description, imageUrl } = req.body;
 
         const targetCategory = await db.select().from(categories).where(eq(categories.id, id));
@@ -143,7 +144,7 @@ export const updateCategoryDetails = async (req: Request, res: Response): Promis
 
 export const updateSearchBlueprint = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
         const { searchBlueprint } = req.body;
 
         const targetCategory = await db.select().from(categories).where(eq(categories.id, id));
@@ -173,7 +174,7 @@ export const updateSearchBlueprint = async (req: Request, res: Response): Promis
 
 export const updateCategoryStatus = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
         const { status } = req.body;
 
         const validStatuses = ['ACTIVE', 'DISABLED', 'ARCHIVED', 'DELETED'];
@@ -208,7 +209,9 @@ export const updateCategoryStatus = async (req: Request, res: Response): Promise
 
 export const hardDeleteCategory = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
+
+
 
         const linkedProducts = await db.select({ count: sql<number>`count(*)::int` })
             .from(products)

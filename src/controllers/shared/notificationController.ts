@@ -62,7 +62,7 @@ export const getPaginatedNotifications = async (req: AuthRequest, res: Response)
 export const getNotificationById = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const userId = req.user.id;
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
 
         const notification = await db.select()
             .from(notifications)
@@ -82,7 +82,7 @@ export const getNotificationById = async (req: AuthRequest, res: Response): Prom
 export const markAsSeen = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const userId = req.user.id;
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
 
         const updated = await db.update(notifications)
             .set({ isRead: true })
@@ -118,7 +118,7 @@ export const markAllAsSeen = async (req: AuthRequest, res: Response): Promise<vo
 export const archiveNotification = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const userId = req.user.id;
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
 
         const updated = await db.update(notifications)
             .set({ isArchived: true, isRead: true }) // Automatically mark as read if archived
@@ -139,7 +139,7 @@ export const archiveNotification = async (req: AuthRequest, res: Response): Prom
 export const deleteNotification = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const userId = req.user.id;
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
 
         const deleted = await db.delete(notifications)
             .where(and(eq(notifications.id, id), eq(notifications.userId, userId)))

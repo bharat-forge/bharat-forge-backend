@@ -3,6 +3,7 @@ import { db } from '../../configs/db';
 import { orders, orderItems, products, invoices, notifications } from '../../db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { AuthRequest } from '../../middlewares/authMiddleware';
+import { users } from '../../db/schema';
 
 export const getDetailedOrders = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -65,7 +66,7 @@ export const getDetailedOrders = async (req: AuthRequest, res: Response): Promis
 export const getOrderById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user.id;
-    const { orderId } = req.params;
+    const { orderId } = req.params as { [key: string]: string };
 
     const order = await db.select().from(orders).where(and(eq(orders.id, orderId), eq(orders.userId, userId)));
     if (order.length === 0) {
@@ -101,7 +102,7 @@ export const getOrderById = async (req: AuthRequest, res: Response): Promise<voi
 export const cancelOrder = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user.id;
-    const { orderId } = req.params;
+    const { orderId } = req.params as { [key: string]: string };
     const { reason } = req.body;
 
     const order = await db.select().from(orders).where(and(eq(orders.id, orderId), eq(orders.userId, userId)));

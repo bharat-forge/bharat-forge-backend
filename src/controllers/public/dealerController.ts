@@ -44,7 +44,8 @@ export const getActiveDealers = async (req: Request, res: Response): Promise<voi
 
 export const getDealerDetails = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { [key: string]: string };
+
 
     // 1. Fetch Dealer Info
     const dealer = await db.select({

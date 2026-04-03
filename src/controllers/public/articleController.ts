@@ -81,7 +81,8 @@ export const getTrendingArticles = async (req: Request, res: Response): Promise<
 
 export const getArticleBySlug = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { slug } = req.params;
+        const { slug } = req.params as { [key: string]: string };
+
 
         const articleResult = await db.select({
             id: articles.id,

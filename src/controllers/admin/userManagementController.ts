@@ -55,7 +55,7 @@ export const getPaginatedUsers = async (req: Request, res: Response): Promise<vo
 
 export const getUserDetails = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { id: string };
 
         const userResult = await db.select()
             .from(users)
@@ -84,7 +84,7 @@ export const getUserDetails = async (req: Request, res: Response): Promise<void>
 
 export const updateUserStatus = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
         const { status } = req.body;
 
         const validStatuses = ['ACTIVE', 'SUSPENDED_PURCHASES', 'BLOCKED'];
@@ -117,7 +117,7 @@ export const updateUserStatus = async (req: Request, res: Response): Promise<voi
 
 export const sendCustomNotification = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
         const { title, message, metadata } = req.body;
 
         const user = await db.select().from(users).where(eq(users.id, id));
@@ -169,7 +169,8 @@ export const sendBulkNotification = async (req: Request, res: Response): Promise
 
 export const hardDeleteUser = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
+
 
         const orderCheck = await db.select({ count: sql<number>`count(*)::int` })
             .from(orders)

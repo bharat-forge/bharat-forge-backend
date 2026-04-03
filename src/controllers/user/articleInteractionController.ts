@@ -32,7 +32,7 @@ export const addComment = async (req: AuthRequest, res: Response): Promise<void>
 
 export const updateComment = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { commentId } = req.params;
+        const { commentId } = req.params as { [key: string]: string };
         const { comment } = req.body;
         const userId = req.user.id;
 
@@ -58,7 +58,7 @@ export const updateComment = async (req: AuthRequest, res: Response): Promise<vo
 
 export const deleteMyComment = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { commentId } = req.params;
+        const { commentId } = req.params as { [key: string]: string };
         const userId = req.user.id;
 
         const target = await db.select().from(articleComments).where(and(eq(articleComments.id, commentId), eq(articleComments.userId, userId)));

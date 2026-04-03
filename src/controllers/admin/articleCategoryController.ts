@@ -67,7 +67,7 @@ export const createCategory = async (req: Request, res: Response): Promise<void>
 
 export const updateCategory = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { [key: string]: string };
     const { name, slug, status } = req.body;
 
     const updated = await db.update(articleCategories)
@@ -88,7 +88,8 @@ export const updateCategory = async (req: Request, res: Response): Promise<void>
 
 export const deleteCategory = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { [key: string]: string };
+
 
     const linkedArticles = await db.select({ count: sql<number>`count(*)::int` })
       .from(articleToCategories)

@@ -71,7 +71,7 @@ export const getAllOrders = async (req: Request, res: Response): Promise<void> =
 
 export const updateRefundStatus = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { orderId } = req.params;
+    const { orderId } = req.params as { [key: string]: string };
     const { refundStatus } = req.body;
 
     const validStatuses = ['NONE', 'INITIATED', 'PROCESSING', 'COMPLETED', 'FAILED'];
@@ -103,7 +103,7 @@ export const updateRefundStatus = async (req: Request, res: Response): Promise<v
 
 export const updateOrderStatus = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { orderId } = req.params;
+    const { orderId } = req.params as { [key: string]: string };
     const { status } = req.body; 
 
     const validStatuses = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];

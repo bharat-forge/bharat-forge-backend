@@ -10,7 +10,9 @@ export const getAllTickets = async (req: Request, res: Response): Promise<void> 
     const offset = (page - 1) * limit;
     const status = req.query.status as string;
 
-    let baseQuery = db.select({
+    const whereClause = status ? eq(supportTickets.status, status as any) : undefined;
+
+    const results = await db.select({
       id: supportTickets.id,
       subject: supportTickets.subject,
       status: supportTickets.status,
@@ -19,17 +21,14 @@ export const getAllTickets = async (req: Request, res: Response): Promise<void> 
       creatorEmail: users.email,
       creatorRole: users.role
     })
-    .from(supportTickets)
-    .innerJoin(users, eq(supportTickets.creatorId, users.id));
+      .from(supportTickets)
+      .innerJoin(users, eq(supportTickets.creatorId, users.id))
+      .where(whereClause)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(supportTickets.createdAt));
 
-    if (status) {
-      baseQuery = baseQuery.where(eq(supportTickets.status, status as any));
-    }
-
-    const results = await baseQuery.limit(limit).offset(offset).orderBy(desc(supportTickets.createdAt));
-    
-    const conditions = status ? [eq(supportTickets.status, status as any)] : [];
-    const totalCountQuery = await db.select({ count: sql<number>`count(*)::int` }).from(supportTickets).where(and(...conditions));
+    const totalCountQuery = await db.select({ count: sql<number>`count(*)::int` }).from(supportTickets).where(whereClause);
 
     res.status(200).json({
       data: results,
@@ -47,7 +46,7 @@ export const getAllTickets = async (req: Request, res: Response): Promise<void> 
 
 export const updateTicketStatus = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { ticketId } = req.params;
+    const { ticketId } = req.params as { [key: string]: string };
     const { status } = req.body;
 
     await db.update(supportTickets).set({ status, updatedAt: new Date() }).where(eq(supportTickets.id, ticketId));

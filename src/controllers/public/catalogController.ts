@@ -74,7 +74,8 @@ export const browseProducts = async (req: Request, res: Response): Promise<void>
 
 export const getProductDetails = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { [key: string]: string };
+
 
     const product = await db.select({
       id: products.id,

@@ -57,7 +57,7 @@ export const getMyTickets = async (req: AuthRequest, res: Response): Promise<voi
 export const getTicketDetails = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user.id;
-    const { ticketId } = req.params;
+    const { ticketId } = req.params as { [key: string]: string };
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 50;
     const offset = (page - 1) * limit;
@@ -92,7 +92,7 @@ export const getTicketDetails = async (req: AuthRequest, res: Response): Promise
 export const postTicketMessage = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user.id;
-    const { ticketId } = req.params;
+    const { ticketId } = req.params as { [key: string]: string };
     const { message } = req.body;
 
     const ticket = await db.select().from(supportTickets).where(eq(supportTickets.id, ticketId));
@@ -122,7 +122,7 @@ export const postTicketMessage = async (req: AuthRequest, res: Response): Promis
 export const resolveMyTicket = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user.id;
-    const { ticketId } = req.params;
+    const { ticketId } = req.params as { [key: string]: string };
 
     const ticket = await db.select().from(supportTickets).where(and(eq(supportTickets.id, ticketId), eq(supportTickets.creatorId, userId)));
     
@@ -142,7 +142,7 @@ export const resolveMyTicket = async (req: AuthRequest, res: Response): Promise<
 export const requestCallback = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user.id;
-    const { ticketId } = req.params;
+    const { ticketId } = req.params as { [key: string]: string };
 
     await db.update(supportTickets).set({ callbackRequested: true, updatedAt: new Date() }).where(and(eq(supportTickets.id, ticketId), eq(supportTickets.creatorId, userId)));
 

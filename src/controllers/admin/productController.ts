@@ -119,7 +119,7 @@ export const getPaginatedProducts = async (req: Request, res: Response): Promise
 
 export const getProductById = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
 
         const result = await db.select().from(products).where(eq(products.id, id));
 
@@ -143,7 +143,7 @@ export const getProductById = async (req: Request, res: Response): Promise<void>
 
 export const updateProductBaseDetails = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
         const updates = req.body; 
 
         delete updates.compatibilities;
@@ -165,7 +165,7 @@ export const updateProductBaseDetails = async (req: Request, res: Response): Pro
 
 export const updateProductCompatibilities = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
         const { compatibilities } = req.body;
 
         const targetProduct = await db.select().from(products).where(eq(products.id, id));
@@ -190,7 +190,7 @@ export const updateProductCompatibilities = async (req: Request, res: Response):
 
 export const updateProductStatus = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
         const { status } = req.body;
 
         const validStatuses = ['ACTIVE', 'DISABLED', 'ARCHIVED', 'DELETED'];
@@ -218,7 +218,8 @@ export const updateProductStatus = async (req: Request, res: Response): Promise<
 
 export const hardDeleteProduct = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
+
 
         const linkedOrders = await db.select({ count: sql<number>`count(*)::int` })
             .from(orderItems)
@@ -244,7 +245,7 @@ export const hardDeleteProduct = async (req: Request, res: Response): Promise<vo
 
 export const getProductReviews = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { [key: string]: string };
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
         const offset = (page - 1) * limit;
@@ -284,7 +285,7 @@ export const getProductReviews = async (req: Request, res: Response): Promise<vo
 
 export const toggleProductReviewStatus = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { reviewId } = req.params;
+        const { reviewId } = req.params as { [key: string]: string };
         const { status } = req.body;
 
         const updated = await db.update(productReviews)

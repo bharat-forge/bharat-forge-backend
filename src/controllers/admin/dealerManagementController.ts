@@ -38,9 +38,11 @@ export const getPaginatedDealers = async (req: Request, res: Response): Promise<
         const offset = (page - 1) * limit;
         const status = req.query.status as string;
 
-        let baseQuery = db.select({
+        const whereClause = status ? eq(dealerProfiles.status, status as any) : undefined;
+
+        const results = await db.select({
             id: dealerProfiles.id,
-            userId: dealerProfiles.userId, 
+            userId: dealerProfiles.userId,
             businessName: dealerProfiles.businessName,
             contactPerson: dealerProfiles.contactPerson,
             status: dealerProfiles.status,
@@ -48,14 +50,15 @@ export const getPaginatedDealers = async (req: Request, res: Response): Promise<
             createdAt: dealerProfiles.createdAt
         })
             .from(dealerProfiles)
-            .leftJoin(users, eq(dealerProfiles.userId, users.id));
+            .leftJoin(users, eq(dealerProfiles.userId, users.id))
+            .where(whereClause)
+            .limit(limit)
+            .offset(offset)
+            .orderBy(desc(dealerProfiles.createdAt));
 
-        if (status) {
-            baseQuery = baseQuery.where(eq(dealerProfiles.status, status as any));
-        }
-
-        const results = await baseQuery.limit(limit).offset(offset).orderBy(desc(dealerProfiles.createdAt));
-        const totalQuery = await db.select({ count: sql<number>`count(*)::int` }).from(dealerProfiles);
+        const totalQuery = await db.select({ count: sql<number>`count(*)::int` })
+            .from(dealerProfiles)
+            .where(whereClause);
 
         res.status(200).json({
             data: results,
@@ -73,7 +76,8 @@ export const getPaginatedDealers = async (req: Request, res: Response): Promise<
 
 export const getDealerComplianceDetails = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { dealerId } = req.params;
+        const { dealerId } = req.params as { dealerId: string };
+
 
         const dealer = await db.select().from(dealerProfiles).where(eq(dealerProfiles.id, dealerId));
         if (!dealer.length) {
@@ -131,7 +135,7 @@ const checkAndAutoApproveDealer = async (dealerId: string, userId: string) => {
 
 export const reviewDealerSubmission = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { submissionId } = req.params;
+        const { submissionId } = req.params as { submissionId: string };
         const { status, adminRemarks } = req.body;
 
         const targetSubmission = await db.select().from(dealerSubmissions).where(eq(dealerSubmissions.id, submissionId));
@@ -170,7 +174,7 @@ export const reviewDealerSubmission = async (req: Request, res: Response): Promi
 
 export const updateDealerSuspensionStatus = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { dealerId } = req.params;
+        const { dealerId } = req.params as { dealerId: string };
         const { status, reason } = req.body;
 
         const validStatuses = ['SUSPENDED_FULL', 'SUSPENDED_PURCHASES', 'APPROVED'];
@@ -214,7 +218,7 @@ export const updateDealerSuspensionStatus = async (req: Request, res: Response):
 
 export const getVerificationBlueprintById = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { id: string };
         const blueprint = await db.select().from(verificationBlueprints).where(eq(verificationBlueprints.id, id));
 
         if (blueprint.length === 0) {
@@ -230,7 +234,7 @@ export const getVerificationBlueprintById = async (req: Request, res: Response):
 
 export const updateVerificationBlueprint = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { id: string };
         const { name, description, type, isRequired } = req.body;
 
         // Added Safety Validation
@@ -260,7 +264,7 @@ export const updateVerificationBlueprint = async (req: Request, res: Response): 
 
 export const toggleBlueprintStatus = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { id: string };
         const { status } = req.body;
 
         const validStatuses = ['ACTIVE', 'DISABLED'];
@@ -287,7 +291,7 @@ export const toggleBlueprintStatus = async (req: Request, res: Response): Promis
 
 export const hardDeleteBlueprint = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;
+        const { id } = req.params as { id: string };
 
         const linkedSubmissions = await db.select({ count: sql<number>`count(*)::int` })
             .from(dealerSubmissions)
@@ -311,7 +315,7 @@ export const hardDeleteBlueprint = async (req: Request, res: Response): Promise<
 
 export const getAdminDealerInventory = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { dealerId } = req.params;
+        const { dealerId } = req.params as { dealerId: string };
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
         const offset = (page - 1) * limit;
@@ -328,16 +332,16 @@ export const getAdminDealerInventory = async (req: Request, res: Response): Prom
             productSku: products.sku,
             productImages: products.images
         })
-        .from(dealerInventory)
-        .leftJoin(products, eq(dealerInventory.productId, products.id))
-        .where(eq(dealerInventory.dealerId, dealerId))
-        .limit(limit)
-        .offset(offset)
-        .orderBy(desc(dealerInventory.updatedAt));
+            .from(dealerInventory)
+            .leftJoin(products, eq(dealerInventory.productId, products.id))
+            .where(eq(dealerInventory.dealerId, dealerId))
+            .limit(limit)
+            .offset(offset)
+            .orderBy(desc(dealerInventory.updatedAt));
 
         const totalQuery = await db.select({ count: sql<number>`count(*)::int` })
-        .from(dealerInventory)
-        .where(eq(dealerInventory.dealerId, dealerId));
+            .from(dealerInventory)
+            .where(eq(dealerInventory.dealerId, dealerId));
 
         res.status(200).json({
             data: inventory,
@@ -355,7 +359,7 @@ export const getAdminDealerInventory = async (req: Request, res: Response): Prom
 
 export const getAdminDealerSalesHistory = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { dealerId } = req.params;
+        const { dealerId } = req.params as { dealerId: string };
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
         const offset = (page - 1) * limit;
@@ -375,16 +379,16 @@ export const getAdminDealerSalesHistory = async (req: Request, res: Response): P
             productSku: products.sku,
             productImages: products.images
         })
-        .from(dealerManualSales)
-        .leftJoin(products, eq(dealerManualSales.productId, products.id))
-        .where(eq(dealerManualSales.dealerId, dealerId))
-        .limit(limit)
-        .offset(offset)
-        .orderBy(desc(dealerManualSales.saleDate));
+            .from(dealerManualSales)
+            .leftJoin(products, eq(dealerManualSales.productId, products.id))
+            .where(eq(dealerManualSales.dealerId, dealerId))
+            .limit(limit)
+            .offset(offset)
+            .orderBy(desc(dealerManualSales.saleDate));
 
         const totalQuery = await db.select({ count: sql<number>`count(*)::int` })
-        .from(dealerManualSales)
-        .where(eq(dealerManualSales.dealerId, dealerId));
+            .from(dealerManualSales)
+            .where(eq(dealerManualSales.dealerId, dealerId));
 
         res.status(200).json({
             data: sales,

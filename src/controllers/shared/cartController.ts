@@ -107,7 +107,7 @@ export const addToCart = async (req: AuthRequest, res: Response): Promise<void> 
 
 export const removeFromCart = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { itemId } = req.params;
+    const { itemId } = req.params as { [key: string]: string };
     await db.delete(cartItems).where(eq(cartItems.id, itemId));
     res.status(200).json({ message: 'Item removed from cart' });
   } catch (error) {
@@ -130,7 +130,7 @@ export const clearMyCart = async (req: AuthRequest, res: Response): Promise<void
 
 export const updateCartItemQuantity = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { itemId } = req.params;
+    const { itemId } = req.params as { [key: string]: string };
     const { quantity } = req.body;
 
     if (quantity <= 0) {

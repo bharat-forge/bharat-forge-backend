@@ -119,7 +119,7 @@ export const getMyProductRequests = async (req: AuthRequest, res: Response): Pro
 
 export const cancelDealershipRequest = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { productId } = req.params;
+    const { productId } = req.params as { productId: string };
     const userId = req.user.id;
 
     const dealer = await db.select().from(dealerProfiles).where(eq(dealerProfiles.userId, userId));

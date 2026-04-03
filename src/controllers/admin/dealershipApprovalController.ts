@@ -68,7 +68,7 @@ export const getAllDealershipRequests = async (req: Request, res: Response): Pro
 
 export const updateDealershipStatus = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { dealerId, productId } = req.params;
+    const { dealerId, productId } = req.params as { dealerId: string, productId: string };
     const { status } = req.body; 
 
     const validStatuses = ['APPROVED', 'REJECTED', 'REVOKED'];

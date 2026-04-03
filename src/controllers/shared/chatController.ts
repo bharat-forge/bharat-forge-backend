@@ -92,7 +92,7 @@ export const sendMessage = async (req: AuthRequest, res: Response): Promise<void
 export const getChatHistory = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user.id;
-    const { targetUserId } = req.params;
+    const { targetUserId } = req.params as { [key: string]: string };
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 50;
     const offset = (page - 1) * limit;
@@ -126,7 +126,7 @@ export const getChatHistory = async (req: AuthRequest, res: Response): Promise<v
 
 export const updateMessageStatus = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { messageId } = req.params;
+    const { messageId } = req.params as { [key: string]: string };
     const { status } = req.body; 
 
     await db.update(chatMessages).set({ deliveryStatus: status as any }).where(eq(chatMessages.id, messageId));

@@ -36,7 +36,7 @@ export const submitDealerReview = async (req: AuthRequest, res: Response): Promi
 
 export const updateMyDealerReview = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { reviewId } = req.params;
+        const { reviewId } = req.params as { [key: string]: string };
         const { rating, comment } = req.body;
         const userId = req.user.id;
 
@@ -64,7 +64,7 @@ export const updateMyDealerReview = async (req: AuthRequest, res: Response): Pro
 
 export const deleteMyDealerReview = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { reviewId } = req.params;
+        const { reviewId } = req.params as { [key: string]: string };
         const userId = req.user.id;
 
         const targetReview = await db.select().from(dealerReviews).where(and(eq(dealerReviews.id, reviewId), eq(dealerReviews.userId, userId)));
