@@ -42,6 +42,9 @@ import userDealerReviewRoutes from './routes/user/dealerReviewRoutes';
 import userProductReviewRoutes from './routes/user/productReviewRoutes';
 
 const app = express();
+
+app.set('trust proxy', 1);
+
 const httpServer = http.createServer(app);
 
 setupSocket(httpServer);
