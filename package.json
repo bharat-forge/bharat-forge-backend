@@ -12,15 +12,15 @@
     "build": "tsc && tsc-alias",
     "lint": "eslint . --ext .ts",
     "test": "jest",
-    "db:generate": "npx drizzle-kit generate --config=src/configs/drizzle.config.ts",
-    "db:push": "npx drizzle-kit push --config=src/configs/drizzle.config.ts",
-    "db:migrate": "npx drizzle-kit migrate --config=src/configs/drizzle.config.ts",
-    "db:seed": "ts-node src/utils/seed/index.ts",
-    "db:studio": "drizzle-kit studio",
+    "db:generate": "NODE_ENV=development npx drizzle-kit generate --config=src/configs/drizzle.config.ts",
+    "db:push": "NODE_ENV=development npx drizzle-kit push --config=src/configs/drizzle.config.ts",
+    "db:migrate": "NODE_ENV=development npx drizzle-kit migrate --config=src/configs/drizzle.config.ts",
+    "db:seed": "NODE_ENV=development ts-node src/utils/seed/index.ts",
+    "db:studio": "NODE_ENV=development drizzle-kit studio",
     "db:destroy": "NODE_ENV=development ts-node src/utils/dbDestroy.ts",
     "db:migrate:prod": "node dist/utils/migrate.js",
-    "seed": "ts-node src/utils/seed/index.ts",
-    "seed:destroy": "ts-node src/utils/seed/index.ts -d"
+    "seed": "NODE_ENV=development ts-node src/utils/seed/index.ts",
+    "seed:destroy": "NODE_ENV=development ts-node src/utils/seed/index.ts -d"
   },
   "keywords": [
     "nodejs",
