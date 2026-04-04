@@ -83,14 +83,23 @@ export const getPaginatedProducts = async (req: Request, res: Response): Promise
             id: products.id,
             name: products.name,
             sku: products.sku,
+            hsnCode: products.hsnCode,
+            categoryId: products.categoryId,
+            description: products.description,
             basePrice: products.basePrice,
+            moq: products.moq,
             stock: products.stock,
+            certifications: products.certifications,
+            warrantyInfo: products.warrantyInfo,
             status: products.status,
+            specifications: products.specifications,
+            compatibilities: products.compatibilities,
+            bulkPricing: products.bulkPricing,
+            images: products.images,
             categoryName: categories.name,
             createdAt: products.createdAt,
-            images: products.images,
-            averageRating: sql<number>`(SELECT COALESCE(AVG(rating), 0) FROM product_reviews WHERE product_id = products.id)::float`,
-            reviewCount: sql<number>`(SELECT count(*) FROM product_reviews WHERE product_id = products.id)::int`
+            averageRating: sql<number>`(SELECT COALESCE(AVG(rating), 0) FROM product_reviews WHERE product_id = products.id AND status = 'ACTIVE')::float`,
+            reviewCount: sql<number>`(SELECT count(*) FROM product_reviews WHERE product_id = products.id AND status = 'ACTIVE')::int`
         })
             .from(products)
             .leftJoin(categories, eq(products.categoryId, categories.id))

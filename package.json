@@ -17,6 +17,7 @@
     "db:migrate": "npx drizzle-kit migrate --config=src/configs/drizzle.config.ts",
     "db:seed": "ts-node src/utils/seed/index.ts",
     "db:studio": "drizzle-kit studio",
+    "db:destroy": "NODE_ENV=development ts-node src/utils/dbDestroy.ts",
     "db:migrate:prod": "node dist/utils/migrate.js",
     "seed": "ts-node src/utils/seed/index.ts",
     "seed:destroy": "ts-node src/utils/seed/index.ts -d"
