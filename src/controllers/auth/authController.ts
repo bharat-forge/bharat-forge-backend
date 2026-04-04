@@ -71,21 +71,29 @@ export const login = async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        // REMOVED the isVerified check. If they are in the DB, they are verified.
+        const settings = (user.settings as Record<string, any>) || {};
+        const isTwoFactorEnabled = settings.isTwoFactorEnabled !== false;
+
+        if (!isTwoFactorEnabled) {
+            const accessToken = generateAccessToken(user.id, user.role);
+            const refreshToken = generateRefreshToken(user.id);
+
+            await db.update(users).set({ refreshToken }).where(eq(users.id, user.id));
+
+            res.status(200).json({
+                token: accessToken,
+                refreshToken,
+                user: { id: user.id, email: user.email, role: user.role }
+            });
+            return;
+        }
 
         const otp = generateOTP();
         const redisKey = `OTP:LOGIN:${email}`;
         
         await redisClient.setEx(redisKey, 600, JSON.stringify({ otp }));
 
-        console.info(otp)
-        // await emailConfig.sendEmail(
-        //     email,
-        //     'Login Attempt Verification',
-        //     `<h1>Your Login OTP is ${otp}</h1><p>It expires in 10 minutes.</p>`
-        // );
-
-        res.status(200).json({ message: 'Credentials verified, 2FA OTP sent to email' });
+        res.status(200).json({ message: 'Credentials verified, 2FA OTP sent to email', requires2FA: true });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
     }
@@ -110,7 +118,6 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
         }
 
         if (type === 'REGISTER') {
-            // REMOVED isVerified: true from here. The schema doesn't need it.
             const newUser = await db.insert(users).values({
                 email: storedData.email,
                 password: storedData.password,
@@ -162,7 +169,6 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
     }
 };
 
-// ... (resendOTP, forgotPassword, resetPassword, refreshAccessToken, logout remain unchanged)
 export const resendOTP = async (req: Request, res: Response): Promise<void> => {
     try {
         const { email, type } = req.body;

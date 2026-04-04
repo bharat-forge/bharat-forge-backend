@@ -37,7 +37,7 @@ export const seedDealers = async () => {
     const usersToInsert = dealersData.map((dealer, index) => {
       const [firstName, ...lastNames] = dealer.contactPerson.split(' ');
       const phone = `98765432${index.toString().padStart(2, '0')}`;
-      
+
       return {
         email: `dealer${index + 1}@test.com`,
         password: hashedPassword,
@@ -49,6 +49,9 @@ export const seedDealers = async () => {
           businessName: dealer.businessName,
           phone,
           mobileNumber: phone
+        },
+        settings: {
+          isTwoFactorEnabled: false
         }
       };
     });
@@ -57,7 +60,7 @@ export const seedDealers = async () => {
 
     const profilesToInsert = dealersData.map((dealer, index) => {
       const phone = `98765432${index.toString().padStart(2, '0')}`;
-      
+
       return {
         userId: insertedUsers[index].id,
         businessName: dealer.businessName,

@@ -5,12 +5,13 @@ import { eq, ne, and, or, ilike, sql, desc, asc } from 'drizzle-orm';
 
 export const createCategory = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { name, slug, description, searchBlueprint } = req.body;
+        const { name, slug, description, imageUrl, searchBlueprint } = req.body;
 
         const newCategory = await db.insert(categories).values({
             name,
             slug,
             description,
+            imageUrl,
             searchBlueprint,
             status: 'ACTIVE'
         }).returning();
@@ -52,6 +53,9 @@ export const getPaginatedCategories = async (req: Request, res: Response): Promi
             id: categories.id,
             name: categories.name,
             slug: categories.slug,
+            description: categories.description,
+            imageUrl: categories.imageUrl,
+            searchBlueprint: categories.searchBlueprint,
             status: categories.status,
             createdAt: categories.createdAt,
             productCount: sql<number>`count(${products.id})::int`
@@ -87,7 +91,6 @@ export const getPaginatedCategories = async (req: Request, res: Response): Promi
 export const getCategoryById = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params as { [key: string]: string };
-
 
         const result = await db.select({
             category: categories,
@@ -210,8 +213,6 @@ export const updateCategoryStatus = async (req: Request, res: Response): Promise
 export const hardDeleteCategory = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params as { [key: string]: string };
-
-
 
         const linkedProducts = await db.select({ count: sql<number>`count(*)::int` })
             .from(products)

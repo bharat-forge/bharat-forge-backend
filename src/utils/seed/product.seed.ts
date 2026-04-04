@@ -24,9 +24,9 @@ const categoriesData = [
     imageUrl: TYRE_IMAGES[1],
     searchBlueprint: {
       filters: [
-        { key: 'vehicleType', label: 'Vehicle Type', type: 'select', options: ['Car', 'SUV', 'Truck', 'Commercial'] },
-        { key: 'rimSize', label: 'Rim Size (Inches)', type: 'select', options: ['14', '15', '16', '17', '18', '19', '20', '22'] },
-        { key: 'terrain', label: 'Terrain', type: 'select', options: ['Highway', 'All-Terrain', 'Mud-Terrain', 'Winter'] }
+        { label: 'Vehicle Type', options: ['Car', 'SUV', 'Truck', 'Commercial'] },
+        { label: 'Rim Size (Inches)', options: ['14', '15', '16', '17', '18', '19', '20', '22'] },
+        { label: 'Terrain', options: ['Highway', 'All-Terrain', 'Mud-Terrain', 'Winter'] }
       ]
     }
   },
@@ -37,9 +37,9 @@ const categoriesData = [
     imageUrl: BATTERY_IMAGES[1],
     searchBlueprint: {
       filters: [
-        { key: 'vehicleType', label: 'Vehicle Type', type: 'select', options: ['Car', 'SUV', 'Truck', 'Tractor'] },
-        { key: 'voltage', label: 'Voltage', type: 'select', options: ['12V', '24V'] },
-        { key: 'capacity', label: 'Capacity (Ah)', type: 'select', options: ['35Ah', '45Ah', '60Ah', '80Ah', '100Ah', '150Ah'] }
+        { label: 'Vehicle Type', options: ['Car', 'SUV', 'Truck', 'Tractor'] },
+        { label: 'Voltage', options: ['12V', '24V'] },
+        { label: 'Capacity (Ah)', options: ['35Ah', '45Ah', '60Ah', '80Ah', '100Ah', '150Ah'] }
       ]
     }
   }
@@ -64,9 +64,7 @@ export const seedProducts = async () => {
 
     const productsToInsert: any[] = [];
 
-    // --- TYRE SEEDING ---
     const tyreBrands = ['RoadKing', 'GripMax', 'TreadMaster', 'AeroFlow'];
-    // Use EXACT options from the searchBlueprint
     const tyreVehicleTypes = ['Car', 'SUV', 'Truck', 'Commercial'];
     const rimSizes = ['14', '15', '16', '17', '18', '19', '20', '22'];
     const tyreTerrains = ['Highway', 'All-Terrain', 'Mud-Terrain', 'Winter'];
@@ -100,21 +98,18 @@ export const seedProducts = async () => {
           LoadIndex: randInt(85, 110),
           SpeedRating: randItem(['H', 'V', 'W', 'Y'])
         },
-        // ALIGNED COMPATIBILITIES
         compatibilities: {
-          vehicleType: vehicleType,
-          rimSize: rim,
-          terrain: terrain
+          'Vehicle Type': vehicleType,
+          'Rim Size (Inches)': rim,
+          'Terrain': terrain
         },
         bulkPricing: { '20': 5, '50': 10 },
-        averageRating: parseFloat((Math.random() * (5 - 3.5) + 3.5).toFixed(1)),
-        reviewCount: randInt(5, 120),
+        averageRating: 0,
+        reviewCount: 0,
       });
     }
 
-    // --- BATTERY SEEDING ---
     const batteryBrands = ['PowerCore', 'VoltMax', 'EnergyPlus', 'ThunderDrive'];
-    // Use EXACT options from the searchBlueprint
     const batteryVehicleTypes = ['Car', 'SUV', 'Truck', 'Tractor'];
     const voltages = ['12V', '24V'];
     const capacities = ['35Ah', '45Ah', '60Ah', '80Ah', '100Ah', '150Ah'];
@@ -142,15 +137,14 @@ export const seedProducts = async () => {
           Technology: 'Sealed Maintenance Free (SMF)',
           Weight: `${randInt(12, 35)} kg`
         },
-        // ALIGNED COMPATIBILITIES
         compatibilities: {
-          vehicleType: vehicleType,
-          voltage: voltage,
-          capacity: capacity
+          'Vehicle Type': vehicleType,
+          'Voltage': voltage,
+          'Capacity (Ah)': capacity
         },
         bulkPricing: { '10': 3, '30': 8 },
-        averageRating: parseFloat((Math.random() * (5 - 3.8) + 3.8).toFixed(1)),
-        reviewCount: randInt(10, 200),
+        averageRating: 0,
+        reviewCount: 0,
       });
     }
 

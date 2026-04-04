@@ -7,23 +7,43 @@ import { AuthRequest } from '../../middlewares/authMiddleware';
 export const updateMyProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user.id;
-    const { firstName, lastName, mobileNumber, dob, gender } = req.body;
+    const { metadata, settings, firstName, lastName, mobileNumber, dob, gender } = req.body;
 
     const currentUser = await db.select().from(users).where(eq(users.id, userId));
     
-    let existingMetadata = currentUser[0].metadata as Record<string, any> || {};
+    if (!currentUser.length) {
+        res.status(404).json({ message: 'User not found' });
+        return;
+    }
+
+    const existingMetadata = (currentUser[0].metadata as Record<string, any>) || {};
+    const existingSettings = (currentUser[0].settings as Record<string, any>) || {};
+
+    const legacyMetadataUpdates = {
+        ...(firstName && { firstName }),
+        ...(lastName && { lastName }),
+        ...(mobileNumber && { mobileNumber }),
+        ...(dob && { dob }),
+        ...(gender && { gender }),
+    };
 
     const updatedMetadata = {
       ...existingMetadata,
-      firstName: firstName || existingMetadata.firstName,
-      lastName: lastName || existingMetadata.lastName,
-      mobileNumber: mobileNumber || existingMetadata.mobileNumber,
-      dob: dob || existingMetadata.dob,
-      gender: gender || existingMetadata.gender
+      ...legacyMetadataUpdates,
+      ...(metadata || {})
+    };
+
+    const updatedSettings = {
+      ...existingSettings,
+      ...(settings || {})
     };
 
     const updatedUser = await db.update(users)
-      .set({ metadata: updatedMetadata, updatedAt: new Date() })
+      .set({ 
+        metadata: updatedMetadata, 
+        settings: updatedSettings,
+        updatedAt: new Date() 
+      })
       .where(eq(users.id, userId))
       .returning();
 
@@ -37,6 +57,12 @@ export const getMyProfile = async (req: AuthRequest, res: Response): Promise<voi
   try {
     const userId = req.user.id;
     const user = await db.select().from(users).where(eq(users.id, userId));
+    
+    if (!user.length) {
+        res.status(404).json({ message: 'User not found' });
+        return;
+    }
+
     res.status(200).json(user[0]);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

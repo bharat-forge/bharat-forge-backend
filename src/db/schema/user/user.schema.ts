@@ -9,6 +9,7 @@ export const users = pgTable('users', {
   status: userStatusEnum('status').default('ACTIVE').notNull(),
   refreshToken: text('refresh_token'),
   metadata: jsonb('metadata'),
+  settings: jsonb('settings'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

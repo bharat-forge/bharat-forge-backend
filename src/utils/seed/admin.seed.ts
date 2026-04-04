@@ -14,6 +14,9 @@ export const seedAdmin = async () => {
       lastName: 'Administrator',
       phone: '+91 9876543210',
       mobileNumber: '9876543210'
+    },
+    settings: {
+      isTwoFactorEnabled: false
     }
   });
 };

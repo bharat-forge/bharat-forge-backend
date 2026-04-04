@@ -41,8 +41,8 @@ export const browseProducts = async (req: Request, res: Response): Promise<void>
       sku: products.sku,
       basePrice: products.basePrice,
       images: products.images,
-      averageRating: products.averageRating,
-      reviewCount: products.reviewCount,
+      averageRating: sql<number>`(SELECT COALESCE(AVG(rating), 0) FROM product_reviews WHERE product_id = products.id AND status = 'ACTIVE')::float`,
+      reviewCount: sql<number>`(SELECT count(*) FROM product_reviews WHERE product_id = products.id AND status = 'ACTIVE')::int`,
       categoryName: categories.name,
       createdAt: products.createdAt
     })
@@ -76,7 +76,6 @@ export const getProductDetails = async (req: Request, res: Response): Promise<vo
   try {
     const { id } = req.params as { [key: string]: string };
 
-
     const product = await db.select({
       id: products.id,
       name: products.name,
@@ -85,8 +84,8 @@ export const getProductDetails = async (req: Request, res: Response): Promise<vo
       basePrice: products.basePrice,
       images: products.images,
       compatibilities: products.compatibilities,
-      averageRating: products.averageRating,
-      reviewCount: products.reviewCount,
+      averageRating: sql<number>`(SELECT COALESCE(AVG(rating), 0) FROM product_reviews WHERE product_id = products.id AND status = 'ACTIVE')::float`,
+      reviewCount: sql<number>`(SELECT count(*) FROM product_reviews WHERE product_id = products.id AND status = 'ACTIVE')::int`,
       categoryName: categories.name
     })
     .from(products)
@@ -119,7 +118,7 @@ export const getProductDetails = async (req: Request, res: Response): Promise<vo
     })
     .from(productReviews)
     .leftJoin(users, eq(productReviews.userId, users.id))
-    .where(eq(productReviews.productId, id))
+    .where(and(eq(productReviews.productId, id), eq(productReviews.status, 'ACTIVE'))) // ACTIVE REVIEWS ONLY
     .orderBy(desc(productReviews.createdAt));
 
     res.status(200).json({
@@ -138,6 +137,7 @@ export const getCategories = async (req: Request, res: Response): Promise<void> 
       id: categories.id,
       name: categories.name,
       slug: categories.slug,
+      searchBlueprint: categories.searchBlueprint // ADDED THIS SO FRONTEND CAN MAP IT
     })
     .from(categories)
     .where(eq(categories.status, 'ACTIVE'))

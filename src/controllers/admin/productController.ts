@@ -89,8 +89,8 @@ export const getPaginatedProducts = async (req: Request, res: Response): Promise
             categoryName: categories.name,
             createdAt: products.createdAt,
             images: products.images,
-            averageRating: products.averageRating,
-            reviewCount: products.reviewCount
+            averageRating: sql<number>`(SELECT COALESCE(AVG(rating), 0) FROM product_reviews WHERE product_id = products.id)::float`,
+            reviewCount: sql<number>`(SELECT count(*) FROM product_reviews WHERE product_id = products.id)::int`
         })
             .from(products)
             .leftJoin(categories, eq(products.categoryId, categories.id))
@@ -219,7 +219,6 @@ export const updateProductStatus = async (req: Request, res: Response): Promise<
 export const hardDeleteProduct = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params as { [key: string]: string };
-
 
         const linkedOrders = await db.select({ count: sql<number>`count(*)::int` })
             .from(orderItems)
