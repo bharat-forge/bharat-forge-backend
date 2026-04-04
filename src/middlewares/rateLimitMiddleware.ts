@@ -6,10 +6,7 @@ export const authLimiter = rateLimit({
   message: { message: 'Too many requests from this IP, please try again after 15 minutes' },
   standardHeaders: true,
   legacyHeaders: false,
-  // This explicitly handles Render's IPv6 format
-  keyGenerator: (req) => {
-    return req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || 'fallback-ip';
-  },
+  // Removed custom keyGenerator: The default uses req.ip and normalizes IPv6 automatically
 });
 
 export const otpLimiter = rateLimit({
@@ -19,7 +16,5 @@ export const otpLimiter = rateLimit({
   message: { message: 'Too many OTP requests. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    return req.ip || req.headers['x-forwarded-for'] as string || 'default-ip';
-  }
+  // Removed custom keyGenerator: The default uses req.ip and normalizes IPv6 automatically
 });
