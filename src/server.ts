@@ -56,12 +56,11 @@ app.use(morgan('dev', {
 }));
 
 app.use(cors({
-  origin: function (origin, callback) {
-    callback(null, true);
-  },
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'Origin', 'Accept']
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'Origin', 'Accept'],
+  maxAge: 86400
 }));
 
 app.use(helmet({
