@@ -1,8 +1,5 @@
 import './env';
 import nodemailer, { Transporter } from 'nodemailer';
-import dns from 'node:dns';
-
-dns.setDefaultResultOrder('ipv4first');
 
 class EmailConfig {
   private transporter: Transporter;
@@ -10,7 +7,7 @@ class EmailConfig {
   constructor() {
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT as string || '587', 10),
+      port: parseInt(process.env.SMTP_PORT as string || '465', 10),
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
         user: process.env.SMTP_USER,
@@ -19,6 +16,8 @@ class EmailConfig {
       tls: {
         rejectUnauthorized: false,
       },
+      // Forces the underlying socket to use IPv4, bypassing DNS race conditions
+      localAddress: '0.0.0.0', 
     });
   }
 
