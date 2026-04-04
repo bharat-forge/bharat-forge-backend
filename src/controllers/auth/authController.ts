@@ -9,7 +9,7 @@ import { generateAccessToken, generateRefreshToken } from '../../utils/jwt';
 import { verifyCaptcha } from '../../utils/captcha';
 import emailConfig from '../../configs/email';
 import { redisClient } from '../../configs/redis';
-import { logger } from '@/utils/logger';
+import { logger } from '../../utils/logger';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -49,6 +49,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
         res.status(201).json({ message: 'Registration successful, verify OTP to continue' });
     } catch (error) {
+        logger.error('Error in register:', error);
         res.status(500).json({ message: 'Server error', error });
     }
 };
@@ -95,6 +96,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
         res.status(200).json({ message: 'Credentials verified, 2FA OTP sent to email', requires2FA: true });
     } catch (error) {
+        logger.error('Error in login:', error);
         res.status(500).json({ message: 'Server error', error });
     }
 };
@@ -165,6 +167,7 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
 
         res.status(400).json({ message: 'Invalid operation type' });
     } catch (error) {
+        logger.error('Error in verifyOTP:', error);
         res.status(500).json({ message: 'Server error', error });
     }
 };
@@ -205,6 +208,7 @@ export const resendOTP = async (req: Request, res: Response): Promise<void> => {
 
         res.status(200).json({ message: 'OTP resent successfully' });
     } catch (error) {
+        logger.error('Error in resendOTP:', error);
         res.status(500).json({ message: 'Server error', error });
     }
 };
@@ -232,6 +236,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
 
         res.status(200).json({ message: 'Password reset OTP sent to email' });
     } catch (error) {
+        logger.error('Error in forgotPassword:', error);
         res.status(500).json({ message: 'Server error', error });
     }
 };
@@ -270,6 +275,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
 
         res.status(200).json({ message: 'Password reset successfully. All existing sessions invalidated.' });
     } catch (error) {
+        logger.error('Error in resetPassword:', error);
         res.status(500).json({ message: 'Server error', error });
     }
 };
@@ -301,6 +307,7 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
 
         res.status(200).json({ accessToken: newAccessToken, refreshToken: newRefreshToken });
     } catch (error) {
+        logger.error('Error in refreshAccessToken:', error);
         res.status(403).json({ message: 'Token expired or invalid' });
     }
 };
@@ -311,6 +318,7 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
         await db.update(users).set({ refreshToken: null }).where(eq(users.email, email));
         res.status(200).json({ message: 'Logged out successfully' });
     } catch (error) {
+        logger.error('Error in logout:', error);
         res.status(500).json({ message: 'Server error', error });
     }
 };
