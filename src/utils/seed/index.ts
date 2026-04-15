@@ -5,9 +5,13 @@ import { seedUsers } from './user.seed';
 import { seedDealers } from './dealer.seed';
 import { seedProducts } from './product.seed';
 import { seedBlogs } from './blogs.seed';
+import { seedTerms } from './terms.seed';
+import { seedPrivacy } from './privacy.seed';
+import { seedOrders } from './order.seed';
+import { seedTickets } from './ticket.seed';
 
 const destroyData = async () => {
-  await db.execute(sql`TRUNCATE TABLE chat_messages, ticket_messages, support_tickets, order_items, orders, cart_items, carts, product_reviews, dealer_reviews, dealer_authorized_products, products, categories, dealer_submissions, dealer_profiles, notifications, users CASCADE;`);
+  await db.execute(sql`TRUNCATE TABLE terms_conditions, chat_messages, ticket_messages, support_tickets, order_items, orders, cart_items, carts, product_reviews, dealer_reviews, dealer_authorized_products, products, categories, dealer_submissions, dealer_profiles, notifications, users CASCADE;`);
 };
 
 const seedData = async () => {
@@ -16,6 +20,10 @@ const seedData = async () => {
   await seedDealers();
   await seedProducts();
   await seedBlogs();
+  await seedTerms();
+  await seedPrivacy();
+  await seedOrders();
+  await seedTickets();
 };
 
 const run = async () => {

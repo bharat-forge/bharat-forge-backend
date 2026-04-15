@@ -1,6 +1,5 @@
 import { db } from '../../configs/db';
 import { products, categories, dealerAuthorizedProducts } from '../../db/schema';
-import { logger } from '../logger';
 
 const TYRE_IMAGES = [
   'https://m.media-amazon.com/images/I/61NLLINuwaL.jpg',
@@ -50,14 +49,11 @@ const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - 
 
 export const seedProducts = async () => {
   try {
-    logger.info('⏳ Seeding Categories and Products...');
-
     await db.delete(dealerAuthorizedProducts);
     await db.delete(products);
     await db.delete(categories);
 
     const insertedCategories = await db.insert(categories).values(categoriesData).returning();
-    logger.info(`✅ Inserted ${insertedCategories.length} Categories.`);
 
     const tyreCategoryId = insertedCategories.find(c => c.slug === 'automotive-tyres')!.id;
     const batteryCategoryId = insertedCategories.find(c => c.slug === 'automotive-batteries')!.id;
@@ -149,9 +145,6 @@ export const seedProducts = async () => {
     }
 
     await db.insert(products).values(productsToInsert);
-    logger.info(`✅ Inserted ${productsToInsert.length} Products.`);
-
   } catch (error) {
-    logger.error('❌ Error seeding products:', error);
   }
 };

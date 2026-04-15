@@ -1,15 +1,12 @@
 import { db } from '../../configs/db';
 import { users } from '../../db/schema';
 import bcrypt from 'bcryptjs';
-import { logger } from '../logger';
 
 const firstNames = ['Amit', 'Priya', 'Rahul', 'Neha', 'Sanjay', 'Kavita', 'Vikram', 'Pooja', 'Rohan', 'Anita', 'Karan', 'Sneha', 'Arjun', 'Meera', 'Aditya'];
 const lastNames = ['Sharma', 'Patel', 'Kumar', 'Singh', 'Gupta', 'Verma', 'Reddy', 'Das', 'Joshi', 'Mehta', 'Nair', 'Bose', 'Rao', 'Chauhan', 'Yadav'];
 
 export const seedUsers = async () => {
   try {
-    logger.info('⏳ Seeding 40 Users...');
-    
     const hashedPassword = await bcrypt.hash('User@123', 10);
     
     const usersToInsert = Array.from({ length: 40 }).map((_, index) => {
@@ -43,10 +40,6 @@ export const seedUsers = async () => {
     });
 
     await db.insert(users).values(usersToInsert);
-    
-    logger.info(`✅ Successfully seeded 40 Users with complete onboarding metadata.`);
-    logger.info(`🔐 All users use the password: User@123`);
   } catch (error) {
-    logger.error('❌ Error seeding users:', error);
   }
 };

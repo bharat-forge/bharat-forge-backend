@@ -1,7 +1,6 @@
 import { db } from '../../configs/db';
 import { articleCategories, articles, articleToCategories, users } from '../../db/schema';
 import { eq } from 'drizzle-orm';
-import { logger } from '../logger';
 
 const IMAGES = [
   'https://static.vecteezy.com/system/resources/thumbnails/056/495/363/small/metal-gears-lying-on-a-table-in-a-manufacturing-workshop-photo.jpg',
@@ -19,26 +18,18 @@ const categoriesData = [
 
 export const seedBlogs = async () => {
   try {
-    logger.info('⏳ Seeding Blogs and Categories...');
-
-    // 1. Get an Admin User to act as the Author
     const adminUsers = await db.select().from(users).where(eq(users.role, 'ADMIN')).limit(1);
     if (adminUsers.length === 0) {
-      logger.error('❌ No admin user found. Please run the main user seeder first.');
       return;
     }
     const adminId = adminUsers[0].id;
 
-    // 2. Clear existing data in the correct relational order to prevent constraint errors
     await db.delete(articleToCategories);
     await db.delete(articles);
     await db.delete(articleCategories);
 
-    // 3. Insert Categories
     const insertedCategories = await db.insert(articleCategories).values(categoriesData).returning();
-    logger.info(`✅ Inserted ${insertedCategories.length} Blog Categories.`);
 
-    // Map categories for easy assignment
     const catMap = {
       trends: insertedCategories.find(c => c.slug === 'manufacturing-trends')!.id,
       maintenance: insertedCategories.find(c => c.slug === 'maintenance-operations')!.id,
@@ -46,7 +37,6 @@ export const seedBlogs = async () => {
       case: insertedCategories.find(c => c.slug === 'case-studies')!.id,
     };
 
-    // 4. Prepare Blog Articles Data
     const blogsData = [
       {
         title: 'The Future of CNC Machining in 2026',
@@ -86,7 +76,6 @@ export const seedBlogs = async () => {
       }
     ];
 
-    // 5. Build final array mapped EXACTLY to the schema
     const finalArticlesToInsert = blogsData.map((blog, index) => ({
       title: blog.title,
       slug: blog.slug,
@@ -101,20 +90,15 @@ export const seedBlogs = async () => {
       createdAt: new Date(Date.now() - Math.floor(Math.random() * 10000000000)) 
     }));
 
-    // 6. Insert Articles and grab their returned IDs
     const insertedArticles = await db.insert(articles).values(finalArticlesToInsert).returning();
-    logger.info(`✅ Inserted ${insertedArticles.length} Blogs.`);
 
-    // 7. Map the inserted articles to their categories in the junction table
     const articleCategoryMappings = blogsData.map((blog, index) => ({
       articleId: insertedArticles[index].id,
       categoryId: blog.categoryId
     }));
 
     await db.insert(articleToCategories).values(articleCategoryMappings);
-    logger.info(`✅ Successfully linked all blogs to their respective categories.`);
 
   } catch (error) {
-    logger.error('❌ Error seeding blogs:', error);
   }
 };

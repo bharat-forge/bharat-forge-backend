@@ -9,3 +9,7 @@ export * from './order/order.schema';
 export * from './order/order.relations';
 export * from './content/article.schema';
 export * from './content/article.relations';
+export * from './terms/term.schema';
+export * from './terms/term.relations';
+export * from './privacy/privacy.schema';
+export * from './privacy/privacy.relations';

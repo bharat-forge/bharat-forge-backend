@@ -2,7 +2,6 @@ import { db } from '../../configs/db';
 import { users, dealerProfiles } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import { logger } from '../logger';
 
 const dealersData = [
   { businessName: 'Prime Auto Parts', contactPerson: 'Mike Ross', city: 'Mumbai', state: 'Maharashtra', pincode: '400001', gstNumber: '27AABCU9603R1ZX', status: 'APPROVED' },
@@ -80,9 +79,6 @@ export const seedDealers = async () => {
     });
 
     await db.insert(dealerProfiles).values(profilesToInsert);
-
-    logger.info(`✅ Successfully seeded ${profilesToInsert.length} Dealers.`);
   } catch (error) {
-    logger.error('❌ Error seeding dealers:', error);
   }
 };

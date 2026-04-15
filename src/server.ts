@@ -19,15 +19,21 @@ import adminOrderManagementRoutes from './routes/admin/orderManagementRoutes';
 import adminProductRoutes from './routes/admin/productRoutes';
 import adminTicketManagementRoutes from './routes/admin/ticketManagementRoutes';
 import adminUserManagementRoutes from './routes/admin/userManagementRoutes';
+import adminTermsRoutes from './routes/admin/termsRoutes';
+import adminPrivacyRoutes from './routes/admin/privacyRoutes';
+import adminDashboardRoutes from './routes/admin/dashboardRoutes';
 
 import dealerDealershipRequestRoutes from './routes/dealer/dealershipRequestRoutes';
 import dealerVerificationRoutes from './routes/dealer/verificationRoutes';
 import inventoryManagementRoutes from './routes/dealer/inventoryManagementRoutes';
+import dealerDashboardRoutes from './routes/dealer/dashboardRoutes';
 
 import publicArticleRoutes from './routes/public/articleRoutes';
 import publicCatalogRoutes from './routes/public/catalogRoutes';
 import publicGuidedSearchRoutes from './routes/public/guidedSearchRoutes';
 import publicDealerRoutes from './routes/public/dealerRoutes';
+import publicTermsRoutes from './routes/public/termsRoutes';
+import publicPrivacyRoutes from './routes/public/privacyRoutes';
 
 import sharedCartRoutes from './routes/shared/cartRoutes';
 import sharedChatRoutes from './routes/shared/chatRoutes';
@@ -81,15 +87,21 @@ app.use('/api/admin/order-management', adminOrderManagementRoutes);
 app.use('/api/admin/products', adminProductRoutes);
 app.use('/api/admin/ticket-management', adminTicketManagementRoutes);
 app.use('/api/admin/users', adminUserManagementRoutes);
+app.use('/api/admin/terms', adminTermsRoutes);
+app.use('/api/admin/privacy', adminPrivacyRoutes);
+app.use('/api/admin/dashboard', adminDashboardRoutes);
 
 app.use('/api/dealer/requests', dealerDealershipRequestRoutes);
 app.use('/api/dealer/verification', dealerVerificationRoutes);
 app.use('/api/dealer/inventory', inventoryManagementRoutes);
+app.use('/api/dealer/dashboard', dealerDashboardRoutes);
 
 app.use('/api/public/articles', publicArticleRoutes);
 app.use('/api/public/catalog', publicCatalogRoutes);
 app.use('/api/public/guided-search', publicGuidedSearchRoutes);
 app.use('/api/public/dealers', publicDealerRoutes);
+app.use('/api/public/terms', publicTermsRoutes);
+app.use('/api/public/privacy', publicPrivacyRoutes);
 
 app.use('/api/shared/cart', sharedCartRoutes);
 app.use('/api/shared/chat', sharedChatRoutes);

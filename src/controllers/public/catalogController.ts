@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { db } from '../../configs/db';
 import { products, categories, dealerAuthorizedProducts, dealerProfiles, productReviews, users } from '../../db/schema';
-import { eq, and, or, sql, desc, ilike, gte, lte } from 'drizzle-orm';
+import { eq, ne, and, or, sql, desc, ilike, gte, lte } from 'drizzle-orm';
 
 export const browseProducts = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -83,6 +83,7 @@ export const getProductDetails = async (req: Request, res: Response): Promise<vo
       description: products.description,
       basePrice: products.basePrice,
       images: products.images,
+      categoryId: products.categoryId, // Added this to easily fetch suggestions
       compatibilities: products.compatibilities,
       averageRating: sql<number>`(SELECT COALESCE(AVG(rating), 0) FROM product_reviews WHERE product_id = products.id AND status = 'ACTIVE')::float`,
       reviewCount: sql<number>`(SELECT count(*) FROM product_reviews WHERE product_id = products.id AND status = 'ACTIVE')::int`,
@@ -118,7 +119,7 @@ export const getProductDetails = async (req: Request, res: Response): Promise<vo
     })
     .from(productReviews)
     .leftJoin(users, eq(productReviews.userId, users.id))
-    .where(and(eq(productReviews.productId, id), eq(productReviews.status, 'ACTIVE'))) // ACTIVE REVIEWS ONLY
+    .where(and(eq(productReviews.productId, id), eq(productReviews.status, 'ACTIVE')))
     .orderBy(desc(productReviews.createdAt));
 
     res.status(200).json({
@@ -137,13 +138,54 @@ export const getCategories = async (req: Request, res: Response): Promise<void> 
       id: categories.id,
       name: categories.name,
       slug: categories.slug,
-      searchBlueprint: categories.searchBlueprint // ADDED THIS SO FRONTEND CAN MAP IT
+      searchBlueprint: categories.searchBlueprint 
     })
     .from(categories)
     .where(eq(categories.status, 'ACTIVE'))
     .orderBy(categories.name);
 
     res.status(200).json(activeCategories);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+// NEW: Dedicated endpoint to fetch similar products based on the target product's category
+export const getSimilarProducts = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params as { [key: string]: string };
+
+    // 1. Get the current product's category
+    const targetProduct = await db.select({ categoryId: products.categoryId }).from(products).where(eq(products.id, id));
+
+    if (targetProduct.length === 0) {
+      res.status(404).json({ message: 'Product not found' });
+      return;
+    }
+
+    const targetCategoryId = targetProduct[0].categoryId;
+
+    // 2. Fetch up to 4 active products in the same category, excluding the current product
+    const similarProducts = await db.select({
+      id: products.id,
+      name: products.name,
+      sku: products.sku,
+      basePrice: products.basePrice,
+      images: products.images,
+      categoryName: categories.name,
+      averageRating: sql<number>`(SELECT COALESCE(AVG(rating), 0) FROM product_reviews WHERE product_id = products.id AND status = 'ACTIVE')::float`,
+      reviewCount: sql<number>`(SELECT count(*) FROM product_reviews WHERE product_id = products.id AND status = 'ACTIVE')::int`
+    })
+    .from(products)
+    .innerJoin(categories, eq(products.categoryId, categories.id))
+    .where(and(
+      eq(products.categoryId, targetCategoryId),
+      ne(products.id, id), // Exclude the product we are currently viewing
+      eq(products.status, 'ACTIVE')
+    ))
+    .limit(4);
+
+    res.status(200).json(similarProducts);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }

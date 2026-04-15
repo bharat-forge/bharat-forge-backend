@@ -4,6 +4,7 @@ import { carts, cartItems, orders, orderItems, products, dealerProfiles } from '
 import { eq, and, desc, sql, ilike } from 'drizzle-orm';
 import { AuthRequest } from '../../middlewares/authMiddleware';
 import { createRazorpayOrder } from '../../services/razorpayService';
+import crypto from 'crypto';
 
 export const checkoutCart = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -38,12 +39,12 @@ export const checkoutCart = async (req: AuthRequest, res: Response): Promise<voi
       if (dealer.length > 0) dealerId = dealer[0].id;
     }
 
-    const newOrderRecord = await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       const newOrder = await tx.insert(orders).values({
         userId,
         dealerProfileId: dealerId,
         totalAmount,
-        paymentMethod,
+        paymentMethod: 'razorpay',
         shippingStreet: shippingAddress.street,
         shippingCity: shippingAddress.city,
         shippingState: shippingAddress.state,
@@ -60,19 +61,49 @@ export const checkoutCart = async (req: AuthRequest, res: Response): Promise<voi
         });
       }
 
-      await tx.delete(cartItems).where(eq(cartItems.cartId, cart[0].id));
+      const razorpayOrder = await createRazorpayOrder(totalAmount, newOrder[0].id);
+      
+      await tx.update(orders).set({ razorpayOrderId: razorpayOrder.id }).where(eq(orders.id, newOrder[0].id));
 
-      return newOrder[0];
+      return { order: newOrder[0], razorpayOrder };
     });
 
-    if (paymentMethod === 'razorpay') {
-      const razorpayOrder = await createRazorpayOrder(totalAmount, newOrderRecord.id);
-      await db.update(orders).set({ razorpayOrderId: razorpayOrder.id }).where(eq(orders.id, newOrderRecord.id));
-      res.status(201).json({ order: newOrderRecord, razorpayOrder });
-      return;
-    }
+    res.status(201).json({ order: result.order, razorpayOrder: result.razorpayOrder });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
-    res.status(201).json({ order: newOrderRecord });
+export const verifyRazorpayPayment = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user.id;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    const secret = process.env.RAZORPAY_KEY_SECRET || '';
+    const generatedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(razorpay_order_id + '|' + razorpay_payment_id)
+      .digest('hex');
+
+    if (generatedSignature === razorpay_signature) {
+      await db.update(orders)
+        .set({ 
+          paymentStatus: 'COMPLETED',
+          razorpayPaymentId: razorpay_payment_id,
+          razorpaySignature: razorpay_signature,
+          updatedAt: new Date()
+        })
+        .where(eq(orders.razorpayOrderId, razorpay_order_id));
+
+      const cart = await db.select().from(carts).where(eq(carts.userId, userId));
+      if (cart.length > 0) {
+        await db.delete(cartItems).where(eq(cartItems.cartId, cart[0].id));
+      }
+
+      res.status(200).json({ success: true, message: 'Payment verified successfully' });
+    } else {
+      res.status(400).json({ success: false, message: 'Payment verification failed' });
+    }
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
