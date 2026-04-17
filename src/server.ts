@@ -22,6 +22,9 @@ import adminUserManagementRoutes from './routes/admin/userManagementRoutes';
 import adminTermsRoutes from './routes/admin/termsRoutes';
 import adminPrivacyRoutes from './routes/admin/privacyRoutes';
 import adminDashboardRoutes from './routes/admin/dashboardRoutes';
+import adminContactRoutes from './routes/admin/contactRoutes';
+import faqRoutes from './routes/admin/faqRoutes';
+
 
 import dealerDealershipRequestRoutes from './routes/dealer/dealershipRequestRoutes';
 import dealerVerificationRoutes from './routes/dealer/verificationRoutes';
@@ -34,6 +37,8 @@ import publicGuidedSearchRoutes from './routes/public/guidedSearchRoutes';
 import publicDealerRoutes from './routes/public/dealerRoutes';
 import publicTermsRoutes from './routes/public/termsRoutes';
 import publicPrivacyRoutes from './routes/public/privacyRoutes';
+import publicContactRoutes from './routes/public/contactRoutes';
+import publicFaqRoutes from './routes/public/faqRoutes';
 
 import sharedCartRoutes from './routes/shared/cartRoutes';
 import sharedChatRoutes from './routes/shared/chatRoutes';
@@ -90,6 +95,8 @@ app.use('/api/admin/users', adminUserManagementRoutes);
 app.use('/api/admin/terms', adminTermsRoutes);
 app.use('/api/admin/privacy', adminPrivacyRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
+app.use('/api/admin/contacts', adminContactRoutes);
+app.use('/api/admin/faqs', faqRoutes);
 
 app.use('/api/dealer/requests', dealerDealershipRequestRoutes);
 app.use('/api/dealer/verification', dealerVerificationRoutes);
@@ -102,6 +109,8 @@ app.use('/api/public/guided-search', publicGuidedSearchRoutes);
 app.use('/api/public/dealers', publicDealerRoutes);
 app.use('/api/public/terms', publicTermsRoutes);
 app.use('/api/public/privacy', publicPrivacyRoutes);
+app.use('/api/public/contacts', publicContactRoutes);
+app.use('/api/public/faqs', publicFaqRoutes);
 
 app.use('/api/shared/cart', sharedCartRoutes);
 app.use('/api/shared/chat', sharedChatRoutes);

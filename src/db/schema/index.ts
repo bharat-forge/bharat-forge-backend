@@ -13,3 +13,7 @@ export * from './terms/term.schema';
 export * from './terms/term.relations';
 export * from './privacy/privacy.schema';
 export * from './privacy/privacy.relations';
+export * from './contact/contact.schema';
+export * from './contact/contact.relations';
+export * from './faq/faq.schema';
+export * from './faq/faq.relations';
