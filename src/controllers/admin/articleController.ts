@@ -122,6 +122,7 @@ export const updateArticle = async (req: Request, res: Response): Promise<void> 
   try {
     const { id } = req.params as { [key: string]: string };
     const { title, slug, content, status, categoryIds } = req.body;
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
     const currentArticle = await db.select().from(articles).where(eq(articles.id, id));
     if (currentArticle.length === 0) {
@@ -129,11 +130,25 @@ export const updateArticle = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    let thumbnailUrl = currentArticle[0].thumbnailUrl;
+    if (files?.thumbnail && files.thumbnail.length > 0) {
+      thumbnailUrl = await uploadFileToS3(files.thumbnail[0].buffer, files.thumbnail[0].originalname, files.thumbnail[0].mimetype, 'articles');
+    }
+
+    let supportingImages = currentArticle[0].supportingImages || [];
+    if (files?.supportingImages && files.supportingImages.length > 0) {
+      supportingImages = await Promise.all(
+        files.supportingImages.slice(0, 3).map(file =>
+          uploadFileToS3(file.buffer, file.originalname, file.mimetype, 'articles')
+        )
+      );
+    }
+
     const publishedAt = status === 'PUBLISHED' && !currentArticle[0].publishedAt ? new Date() : currentArticle[0].publishedAt;
 
     const updated = await db.transaction(async (tx) => {
       const updatedArticle = await tx.update(articles)
-        .set({ title, slug, content, status, publishedAt, updatedAt: new Date() })
+        .set({ title, slug, content, status, publishedAt, thumbnailUrl, supportingImages, updatedAt: new Date() })
         .where(eq(articles.id, id))
         .returning();
 
