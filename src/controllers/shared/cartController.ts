@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { db } from '../../configs/db';
 import { carts, cartItems, products, dealerAuthorizedProducts, dealerProfiles } from '../../db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { AuthRequest } from '../../middlewares/authMiddleware';
 
 export const getMyCart = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -13,12 +13,24 @@ export const getMyCart = async (req: AuthRequest, res: Response): Promise<void> 
       cart = await db.insert(carts).values({ userId }).returning();
     }
 
+    let dealerId: string | null = null;
+    if (req.user.role === 'DEALER') {
+        const dealer = await db.select().from(dealerProfiles).where(eq(dealerProfiles.userId, userId));
+        if (dealer.length > 0) dealerId = dealer[0].id;
+    }
+
+    const discountQuery = dealerId
+        ? sql<number>`COALESCE((SELECT discount_percentage FROM dealer_authorized_products WHERE product_id = products.id AND dealer_id = ${dealerId} AND status = 'APPROVED'), 0)::float`
+        : sql<number>`0::float`;
+
     const items = await db.select({
       id: cartItems.id,
       productId: products.id,
       name: products.name,
       sku: products.sku,
       price: cartItems.price,
+      basePrice: products.basePrice,
+      discountPercentage: discountQuery,
       quantity: cartItems.quantity,
       images: products.images,
       stock: products.stock
@@ -49,15 +61,23 @@ export const addToCart = async (req: AuthRequest, res: Response): Promise<void> 
       return;
     }
 
+    let unitPrice = product[0].basePrice;
+    let authCheck: any[] = [];
+
     if (req.user.role === 'DEALER') {
       const dealer = await db.select().from(dealerProfiles).where(eq(dealerProfiles.userId, userId));
       if (dealer.length > 0) {
-        const authCheck = await db.select().from(dealerAuthorizedProducts).where(
+        authCheck = await db.select().from(dealerAuthorizedProducts).where(
           and(eq(dealerAuthorizedProducts.dealerId, dealer[0].id), eq(dealerAuthorizedProducts.productId, productId))
         );
         if (authCheck.length === 0 || authCheck[0].status !== 'APPROVED') {
           res.status(403).json({ message: 'You are not authorized to purchase this specific product. Request dealership first.' });
           return;
+        }
+
+        // Apply the negotiated discount
+        if (authCheck[0].discountPercentage > 0) {
+          unitPrice = unitPrice * (1 - authCheck[0].discountPercentage / 100);
         }
       }
     }
@@ -71,13 +91,14 @@ export const addToCart = async (req: AuthRequest, res: Response): Promise<void> 
       and(eq(cartItems.cartId, cart[0].id), eq(cartItems.productId, productId))
     );
 
-    let unitPrice = product[0].basePrice;
+    // Apply bulk pricing only if it's better than the negotiated discount
     if (req.user.role === 'DEALER' && Array.isArray(product[0].bulkPricing) && product[0].bulkPricing.length > 0) {
       const tiers = [...product[0].bulkPricing];
       const sortedTiers = tiers.sort((a, b) => b.minQuantity - a.minQuantity);
       const totalQty = (existingItem.length > 0 ? existingItem[0].quantity : 0) + quantity;
+      
       for (const tier of sortedTiers) {
-        if (totalQty >= tier.minQuantity) {
+        if (totalQty >= tier.minQuantity && tier.price < unitPrice) {
           unitPrice = tier.price;
           break;
         }
@@ -132,6 +153,7 @@ export const updateCartItemQuantity = async (req: AuthRequest, res: Response): P
   try {
     const { itemId } = req.params as { [key: string]: string };
     const { quantity } = req.body;
+    const userId = req.user.id;
 
     if (quantity <= 0) {
       await db.delete(cartItems).where(eq(cartItems.id, itemId));
@@ -162,11 +184,21 @@ export const updateCartItemQuantity = async (req: AuthRequest, res: Response): P
         return;
       }
 
+      const dealer = await db.select().from(dealerProfiles).where(eq(dealerProfiles.userId, userId));
+      if (dealer.length > 0) {
+        const authCheck = await db.select().from(dealerAuthorizedProducts).where(
+          and(eq(dealerAuthorizedProducts.dealerId, dealer[0].id), eq(dealerAuthorizedProducts.productId, existingItem[0].productId))
+        );
+        if (authCheck.length > 0 && authCheck[0].status === 'APPROVED' && authCheck[0].discountPercentage > 0) {
+            unitPrice = unitPrice * (1 - authCheck[0].discountPercentage / 100);
+        }
+      }
+
       if (Array.isArray(product[0].bulkPricing) && product[0].bulkPricing.length > 0) {
         const tiers = [...product[0].bulkPricing];
         const sortedTiers = tiers.sort((a, b) => b.minQuantity - a.minQuantity);
         for (const tier of sortedTiers) {
-          if (quantity >= tier.minQuantity) {
+          if (quantity >= tier.minQuantity && tier.price < unitPrice) {
             unitPrice = tier.price;
             break;
           }

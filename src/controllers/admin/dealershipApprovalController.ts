@@ -35,7 +35,9 @@ export const getAllDealershipRequests = async (req: Request, res: Response): Pro
       productId: products.id,
       productName: products.name,
       sku: products.sku,
+      basePrice: products.basePrice,
       status: dealerAuthorizedProducts.status,
+      discountPercentage: dealerAuthorizedProducts.discountPercentage,
       requestedAt: dealerAuthorizedProducts.requestedAt
     })
     .from(dealerAuthorizedProducts)
@@ -69,7 +71,7 @@ export const getAllDealershipRequests = async (req: Request, res: Response): Pro
 export const updateDealershipStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const { dealerId, productId } = req.params as { dealerId: string, productId: string };
-    const { status } = req.body; 
+    const { status, discountPercentage = 0 } = req.body; 
 
     const validStatuses = ['APPROVED', 'REJECTED', 'REVOKED'];
     if (!validStatuses.includes(status)) {
@@ -87,16 +89,25 @@ export const updateDealershipStatus = async (req: Request, res: Response): Promi
     }
 
     await db.update(dealerAuthorizedProducts)
-      .set({ status: status as any, resolvedAt: new Date() })
+      .set({ 
+        status: status as any, 
+        discountPercentage: Number(discountPercentage),
+        resolvedAt: new Date() 
+      })
       .where(and(eq(dealerAuthorizedProducts.dealerId, dealerId), eq(dealerAuthorizedProducts.productId, productId)));
 
     const dealer = await db.select().from(dealerProfiles).where(eq(dealerProfiles.id, dealerId));
     const product = await db.select().from(products).where(eq(products.id, productId));
 
+    let notificationMessage = `Your request for SKU: ${product[0].sku} has been ${status.toLowerCase()}.`;
+    if (status === 'APPROVED') {
+      notificationMessage += ` Your negotiated discount is ${discountPercentage}%.`;
+    }
+
     await db.insert(notifications).values({
       userId: dealer[0].userId,
       title: `Product Dealership ${status}`,
-      message: `Your request for SKU: ${product[0].sku} has been ${status.toLowerCase()}.`
+      message: notificationMessage
     });
 
     res.status(200).json({ message: `Dealership status updated to ${status}` });

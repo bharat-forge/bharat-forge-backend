@@ -1,0 +1,1 @@
+ALTER TABLE "dealer_authorized_products" ADD COLUMN "discount_percentage" double precision DEFAULT 0 NOT NULL;

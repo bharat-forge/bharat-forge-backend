@@ -33,7 +33,8 @@ export const requestDealership = async (req: AuthRequest, res: Response): Promis
     const request = await db.insert(dealerAuthorizedProducts).values({
       dealerId: dealer[0].id,
       productId,
-      status: 'PENDING'
+      status: 'PENDING',
+      discountPercentage: 0
     }).returning();
 
     const admins = await db.select().from(users).where(eq(users.role, 'ADMIN'));
@@ -87,7 +88,9 @@ export const getMyProductRequests = async (req: AuthRequest, res: Response): Pro
       productId: products.id,
       name: products.name,
       sku: products.sku,
+      basePrice: products.basePrice,
       status: dealerAuthorizedProducts.status,
+      discountPercentage: dealerAuthorizedProducts.discountPercentage,
       requestedAt: dealerAuthorizedProducts.requestedAt,
       resolvedAt: dealerAuthorizedProducts.resolvedAt
     })

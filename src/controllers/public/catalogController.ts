@@ -1,7 +1,21 @@
 import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import { db } from '../../configs/db';
 import { products, categories, dealerAuthorizedProducts, dealerProfiles, productReviews, users } from '../../db/schema';
 import { eq, ne, and, or, sql, desc, ilike, gte, lte } from 'drizzle-orm';
+
+const getUserFromToken = (req: Request) => {
+  if ((req as any).user) return (req as any).user;
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      return jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET as string) as any;
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
+};
 
 export const browseProducts = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -14,6 +28,22 @@ export const browseProducts = async (req: Request, res: Response): Promise<void>
     const minPrice = parseFloat(req.query.minPrice as string);
     const maxPrice = parseFloat(req.query.maxPrice as string);
     const minRating = parseFloat(req.query.minRating as string);
+
+    let dealerId: string | null = null;
+    const user = getUserFromToken(req);
+    
+    if (user && user.role === 'DEALER') {
+        const dealer = await db.select().from(dealerProfiles).where(eq(dealerProfiles.userId, user.id));
+        if (dealer.length > 0) dealerId = dealer[0].id;
+    }
+
+    const discountQuery = dealerId
+        ? sql<number>`COALESCE((SELECT discount_percentage FROM dealer_authorized_products WHERE product_id = products.id AND dealer_id = ${dealerId} AND status = 'APPROVED'), 0)::float`
+        : sql<number>`0::float`;
+
+    const dealershipStatusQuery = dealerId
+        ? sql<string>`(SELECT status FROM dealer_authorized_products WHERE product_id = products.id AND dealer_id = ${dealerId})`
+        : sql<string>`null`;
 
     const conditions = [eq(products.status, 'ACTIVE')];
 
@@ -40,6 +70,8 @@ export const browseProducts = async (req: Request, res: Response): Promise<void>
       name: products.name,
       sku: products.sku,
       basePrice: products.basePrice,
+      discountPercentage: discountQuery,
+      dealershipStatus: dealershipStatusQuery,
       images: products.images,
       averageRating: sql<number>`(SELECT COALESCE(AVG(rating), 0) FROM product_reviews WHERE product_id = products.id AND status = 'ACTIVE')::float`,
       reviewCount: sql<number>`(SELECT count(*) FROM product_reviews WHERE product_id = products.id AND status = 'ACTIVE')::int`,
@@ -76,14 +108,31 @@ export const getProductDetails = async (req: Request, res: Response): Promise<vo
   try {
     const { id } = req.params as { [key: string]: string };
 
+    let dealerId: string | null = null;
+    const user = getUserFromToken(req);
+    if (user && user.role === 'DEALER') {
+        const dealer = await db.select().from(dealerProfiles).where(eq(dealerProfiles.userId, user.id));
+        if (dealer.length > 0) dealerId = dealer[0].id;
+    }
+
+    const discountQuery = dealerId
+        ? sql<number>`COALESCE((SELECT discount_percentage FROM dealer_authorized_products WHERE product_id = products.id AND dealer_id = ${dealerId} AND status = 'APPROVED'), 0)::float`
+        : sql<number>`0::float`;
+
+    const dealershipStatusQuery = dealerId
+        ? sql<string>`(SELECT status FROM dealer_authorized_products WHERE product_id = products.id AND dealer_id = ${dealerId})`
+        : sql<string>`null`;
+
     const product = await db.select({
       id: products.id,
       name: products.name,
       sku: products.sku,
       description: products.description,
       basePrice: products.basePrice,
+      discountPercentage: discountQuery,
+      dealershipStatus: dealershipStatusQuery,
       images: products.images,
-      categoryId: products.categoryId, // Added this to easily fetch suggestions
+      categoryId: products.categoryId,
       compatibilities: products.compatibilities,
       averageRating: sql<number>`(SELECT COALESCE(AVG(rating), 0) FROM product_reviews WHERE product_id = products.id AND status = 'ACTIVE')::float`,
       reviewCount: sql<number>`(SELECT count(*) FROM product_reviews WHERE product_id = products.id AND status = 'ACTIVE')::int`,
@@ -150,12 +199,25 @@ export const getCategories = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-// NEW: Dedicated endpoint to fetch similar products based on the target product's category
 export const getSimilarProducts = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params as { [key: string]: string };
 
-    // 1. Get the current product's category
+    let dealerId: string | null = null;
+    const user = getUserFromToken(req);
+    if (user && user.role === 'DEALER') {
+        const dealer = await db.select().from(dealerProfiles).where(eq(dealerProfiles.userId, user.id));
+        if (dealer.length > 0) dealerId = dealer[0].id;
+    }
+
+    const discountQuery = dealerId
+        ? sql<number>`COALESCE((SELECT discount_percentage FROM dealer_authorized_products WHERE product_id = products.id AND dealer_id = ${dealerId} AND status = 'APPROVED'), 0)::float`
+        : sql<number>`0::float`;
+
+    const dealershipStatusQuery = dealerId
+        ? sql<string>`(SELECT status FROM dealer_authorized_products WHERE product_id = products.id AND dealer_id = ${dealerId})`
+        : sql<string>`null`;
+
     const targetProduct = await db.select({ categoryId: products.categoryId }).from(products).where(eq(products.id, id));
 
     if (targetProduct.length === 0) {
@@ -165,12 +227,13 @@ export const getSimilarProducts = async (req: Request, res: Response): Promise<v
 
     const targetCategoryId = targetProduct[0].categoryId;
 
-    // 2. Fetch up to 4 active products in the same category, excluding the current product
     const similarProducts = await db.select({
       id: products.id,
       name: products.name,
       sku: products.sku,
       basePrice: products.basePrice,
+      discountPercentage: discountQuery,
+      dealershipStatus: dealershipStatusQuery,
       images: products.images,
       categoryName: categories.name,
       averageRating: sql<number>`(SELECT COALESCE(AVG(rating), 0) FROM product_reviews WHERE product_id = products.id AND status = 'ACTIVE')::float`,
@@ -180,7 +243,7 @@ export const getSimilarProducts = async (req: Request, res: Response): Promise<v
     .innerJoin(categories, eq(products.categoryId, categories.id))
     .where(and(
       eq(products.categoryId, targetCategoryId),
-      ne(products.id, id), // Exclude the product we are currently viewing
+      ne(products.id, id), 
       eq(products.status, 'ACTIVE')
     ))
     .limit(4);

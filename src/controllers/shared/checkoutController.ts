@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { db } from '../../configs/db';
-import { carts, cartItems, orders, orderItems, products, dealerProfiles } from '../../db/schema';
+import { carts, cartItems, orders, orderItems, products, dealerProfiles, notifications, users } from '../../db/schema';
 import { eq, and, desc, sql, ilike } from 'drizzle-orm';
 import { AuthRequest } from '../../middlewares/authMiddleware';
 import { createRazorpayOrder } from '../../services/razorpayService';
@@ -23,15 +23,18 @@ export const checkoutCart = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
-    let totalAmount = 0;
+    let subtotal = 0;
     for (const item of items) {
       const product = await db.select().from(products).where(eq(products.id, item.productId));
       if (product[0].stock < item.quantity) {
         res.status(400).json({ message: `Insufficient stock for ${product[0].name}` });
         return;
       }
-      totalAmount += item.price * item.quantity;
+      subtotal += item.price * item.quantity;
     }
+
+    const tax = subtotal * 0.18;
+    const totalAmount = Number((subtotal + tax).toFixed(2));
 
     let dealerId = null;
     if (req.user.role === 'DEALER') {

@@ -43,6 +43,7 @@ export const dealerAuthorizedProducts = pgTable('dealer_authorized_products', {
   dealerId: uuid('dealer_id').references(() => dealerProfiles.id).notNull(),
   productId: uuid('product_id').references(() => products.id).notNull(),
   status: authorizationStatusEnum('status').default('PENDING').notNull(),
+  discountPercentage: doublePrecision('discount_percentage').default(0).notNull(),
   requestedAt: timestamp('requested_at').defaultNow().notNull(),
   resolvedAt: timestamp('resolved_at'),
 }, (t) => ({
