@@ -1,13 +1,13 @@
 import { Response } from 'express';
 import { db } from '../../configs/db';
-import { users } from '../../db/schema';
+import { dealerProfiles, users } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import { AuthRequest } from '../../middlewares/authMiddleware';
 
 export const updateMyProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user.id;
-    const { metadata, settings, firstName, lastName, mobileNumber, dob, gender } = req.body;
+    const { metadata, settings, firstName, lastName, mobileNumber, dob, gender, dealerData } = req.body;
 
     const currentUser = await db.select().from(users).where(eq(users.id, userId));
     
@@ -46,6 +46,28 @@ export const updateMyProfile = async (req: AuthRequest, res: Response): Promise<
       })
       .where(eq(users.id, userId))
       .returning();
+
+    if (req.user.role === 'DEALER' && dealerData) {
+        const existingDealer = await db.select().from(dealerProfiles).where(eq(dealerProfiles.userId, userId));
+        
+        if (existingDealer.length === 0) {
+            const contactPerson = `${updatedMetadata.firstName || ''} ${updatedMetadata.lastName || ''}`.trim();
+            const phone = updatedMetadata.mobileNumber || '';
+            
+            await db.insert(dealerProfiles).values({
+                userId: userId,
+                businessName: dealerData.businessName,
+                gstNumber: dealerData.gstNumber,
+                contactPerson: contactPerson,
+                phone: phone,
+                street: dealerData.street,
+                city: dealerData.city,
+                state: dealerData.state,
+                pincode: dealerData.pincode,
+                status: 'PENDING'
+            });
+        }
+    }
 
     res.status(200).json(updatedUser[0]);
   } catch (error) {

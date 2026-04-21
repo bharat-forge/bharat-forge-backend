@@ -8,7 +8,6 @@ export const createVerificationBlueprint = async (req: Request, res: Response): 
     try {
         const { name, description, type, isRequired } = req.body;
 
-        // Added Safety Validation
         const validTypes = ['FILE', 'TEXT', 'NUMBER'];
         if (!validTypes.includes(type)) {
             res.status(400).json({ message: `Invalid type. Must be one of: ${validTypes.join(', ')}` });
@@ -77,7 +76,6 @@ export const getPaginatedDealers = async (req: Request, res: Response): Promise<
 export const getDealerComplianceDetails = async (req: Request, res: Response): Promise<void> => {
     try {
         const { dealerId } = req.params as { dealerId: string };
-
 
         const dealer = await db.select().from(dealerProfiles).where(eq(dealerProfiles.id, dealerId));
         if (!dealer.length) {
@@ -177,7 +175,7 @@ export const updateDealerSuspensionStatus = async (req: Request, res: Response):
         const { dealerId } = req.params as { dealerId: string };
         const { status, reason } = req.body;
 
-        const validStatuses = ['SUSPENDED_FULL', 'SUSPENDED_PURCHASES', 'APPROVED'];
+        const validStatuses = ['PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED_FULL', 'SUSPENDED_PURCHASES'];
         if (!validStatuses.includes(status)) {
             res.status(400).json({ message: 'Invalid status type' });
             return;
@@ -194,14 +192,16 @@ export const updateDealerSuspensionStatus = async (req: Request, res: Response):
             .where(eq(dealerProfiles.id, dealerId));
 
         let title = 'Account Status Update';
-        let message = '';
+        let message = `Your account status has been updated to ${status}. ${reason ? 'Reason: ' + reason : ''}`;
 
         if (status === 'SUSPENDED_FULL') {
             message = `Your account has been fully suspended. You can no longer log in. Reason: ${reason}`;
         } else if (status === 'SUSPENDED_PURCHASES') {
             message = `Your purchasing privileges have been suspended. You can access past invoices but cannot place new orders. Reason: ${reason}`;
         } else if (status === 'APPROVED') {
-            message = 'Your account has been reactivated. Full privileges restored.';
+            message = 'Your account has been approved. Full privileges restored.';
+        } else if (status === 'REJECTED') {
+            message = `Your account application has been rejected. Reason: ${reason}`;
         }
 
         await db.insert(notifications).values({
@@ -237,7 +237,6 @@ export const updateVerificationBlueprint = async (req: Request, res: Response): 
         const { id } = req.params as { id: string };
         const { name, description, type, isRequired } = req.body;
 
-        // Added Safety Validation
         const validTypes = ['FILE', 'TEXT', 'NUMBER'];
         if (!validTypes.includes(type)) {
             res.status(400).json({ message: `Invalid type. Must be one of: ${validTypes.join(', ')}` });

@@ -26,8 +26,28 @@ export const getVerificationRequirements = async (req: AuthRequest, res: Respons
       };
     });
 
+    // Calculate the overall document submission status for the frontend
+    let overallDocsStatus = 'APPROVED'; // Innocent until proven guilty
+    const requiredBlueprints = blueprints.filter(bp => bp.isRequired);
+    
+    let hasMissing = false;
+    let hasRejected = false;
+    let hasPending = false;
+
+    for (const bp of requiredBlueprints) {
+      const sub = submissions.find(s => s.blueprintId === bp.id);
+      if (!sub) hasMissing = true;
+      else if (sub.status === 'REJECTED') hasRejected = true;
+      else if (sub.status === 'PENDING') hasPending = true;
+    }
+
+    if (hasRejected) overallDocsStatus = 'REJECTED'; // User must take action
+    else if (hasMissing) overallDocsStatus = 'PENDING'; // User must take action
+    else if (hasPending) overallDocsStatus = 'PENDING_REVIEW'; // User is waiting
+
     res.status(200).json({
       dealerStatus: dealer[0].status,
+      overallDocsStatus,
       requirements
     });
   } catch (error) {
@@ -87,6 +107,7 @@ export const submitVerificationData = async (req: AuthRequest, res: Response): P
       });
     }
 
+    // If dealer was REJECTED previously, bump them back to PENDING to trigger a re-review
     if (dealer[0].status === 'REJECTED') {
       await db.update(dealerProfiles).set({ status: 'PENDING', updatedAt: new Date() }).where(eq(dealerProfiles.id, dealer[0].id));
     }
