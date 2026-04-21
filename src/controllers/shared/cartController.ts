@@ -75,7 +75,6 @@ export const addToCart = async (req: AuthRequest, res: Response): Promise<void> 
           return;
         }
 
-        // Apply the negotiated discount
         if (authCheck[0].discountPercentage > 0) {
           unitPrice = unitPrice * (1 - authCheck[0].discountPercentage / 100);
         }
@@ -91,28 +90,28 @@ export const addToCart = async (req: AuthRequest, res: Response): Promise<void> 
       and(eq(cartItems.cartId, cart[0].id), eq(cartItems.productId, productId))
     );
 
-    // Apply bulk pricing only if it's better than the negotiated discount
-    if (req.user.role === 'DEALER' && Array.isArray(product[0].bulkPricing) && product[0].bulkPricing.length > 0) {
-      const tiers = [...product[0].bulkPricing];
-      const sortedTiers = tiers.sort((a, b) => b.minQuantity - a.minQuantity);
-      const totalQty = (existingItem.length > 0 ? existingItem[0].quantity : 0) + quantity;
-      
-      for (const tier of sortedTiers) {
-        if (totalQty >= tier.minQuantity && tier.price < unitPrice) {
-          unitPrice = tier.price;
-          break;
+    const totalQty = (existingItem.length > 0 ? existingItem[0].quantity : 0) + quantity;
+
+    if (req.user.role === 'USER') {
+      if (product[0].bulkPricing && typeof product[0].bulkPricing === 'object') {
+        const tiers = Object.entries(product[0].bulkPricing)
+          .map(([q, d]) => ({ minQuantity: Number(q), discount: Number(d) }))
+          .sort((a, b) => b.minQuantity - a.minQuantity);
+        
+        for (const tier of tiers) {
+          if (totalQty >= tier.minQuantity) {
+            unitPrice = product[0].basePrice * (1 - tier.discount / 100);
+            break;
+          }
         }
       }
     }
 
-    const moq = product[0].moq || 1;
-
     if (existingItem.length > 0) {
-      const newQty = existingItem[0].quantity + quantity;
-      await db.update(cartItems).set({ quantity: newQty, price: unitPrice }).where(eq(cartItems.id, existingItem[0].id));
+      await db.update(cartItems).set({ quantity: totalQty, price: unitPrice }).where(eq(cartItems.id, existingItem[0].id));
     } else {
-      if (quantity < moq && req.user.role === 'DEALER') {
-        res.status(400).json({ message: `Minimum order quantity is ${moq}` });
+      if (req.user.role === 'DEALER' && quantity < (product[0].moq || 1)) {
+        res.status(400).json({ message: `Minimum order quantity is ${product[0].moq || 1}` });
         return;
       }
       await db.insert(cartItems).values({ cartId: cart[0].id, productId, quantity, price: unitPrice });
@@ -193,13 +192,14 @@ export const updateCartItemQuantity = async (req: AuthRequest, res: Response): P
             unitPrice = unitPrice * (1 - authCheck[0].discountPercentage / 100);
         }
       }
-
-      if (Array.isArray(product[0].bulkPricing) && product[0].bulkPricing.length > 0) {
-        const tiers = [...product[0].bulkPricing];
-        const sortedTiers = tiers.sort((a, b) => b.minQuantity - a.minQuantity);
-        for (const tier of sortedTiers) {
-          if (quantity >= tier.minQuantity && tier.price < unitPrice) {
-            unitPrice = tier.price;
+    } else if (req.user.role === 'USER') {
+      if (product[0].bulkPricing && typeof product[0].bulkPricing === 'object') {
+        const tiers = Object.entries(product[0].bulkPricing)
+          .map(([q, d]) => ({ minQuantity: Number(q), discount: Number(d) }))
+          .sort((a, b) => b.minQuantity - a.minQuantity);
+        for (const tier of tiers) {
+          if (quantity >= tier.minQuantity) {
+            unitPrice = product[0].basePrice * (1 - tier.discount / 100);
             break;
           }
         }

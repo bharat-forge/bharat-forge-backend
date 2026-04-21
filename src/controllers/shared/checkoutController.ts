@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { db } from '../../configs/db';
-import { carts, cartItems, orders, orderItems, products, dealerProfiles, notifications, users } from '../../db/schema';
+import { carts, cartItems, orders, orderItems, products, dealerProfiles, notifications, users, dealerAuthorizedProducts } from '../../db/schema';
 import { eq, and, desc, sql, ilike } from 'drizzle-orm';
 import { AuthRequest } from '../../middlewares/authMiddleware';
 import { createRazorpayOrder } from '../../services/razorpayService';
@@ -23,26 +23,52 @@ export const checkoutCart = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
-    let subtotal = 0;
-    for (const item of items) {
-      const product = await db.select().from(products).where(eq(products.id, item.productId));
-      if (product[0].stock < item.quantity) {
-        res.status(400).json({ message: `Insufficient stock for ${product[0].name}` });
-        return;
-      }
-      subtotal += item.price * item.quantity;
-    }
-
-    const tax = subtotal * 0.18;
-    const totalAmount = Number((subtotal + tax).toFixed(2));
-
-    let dealerId = null;
+    let dealerId: string | null = null;
     if (req.user.role === 'DEALER') {
       const dealer = await db.select().from(dealerProfiles).where(eq(dealerProfiles.userId, userId));
       if (dealer.length > 0) dealerId = dealer[0].id;
     }
 
     const result = await db.transaction(async (tx) => {
+      let subtotal = 0;
+      const verifiedItems = [];
+
+      for (const item of items) {
+        const product = await tx.select().from(products).where(eq(products.id, item.productId));
+        if (product.length === 0 || product[0].stock < item.quantity) {
+          throw new Error(`Insufficient stock for product SKU: ${product.length > 0 ? product[0].sku : 'Unknown'}`);
+        }
+
+        let unitPrice = product[0].basePrice;
+        
+        if (req.user.role === 'DEALER' && dealerId) {
+          const authCheck = await tx.select().from(dealerAuthorizedProducts).where(
+            and(eq(dealerAuthorizedProducts.dealerId, dealerId), eq(dealerAuthorizedProducts.productId, item.productId))
+          );
+          if (authCheck.length > 0 && authCheck[0].status === 'APPROVED' && authCheck[0].discountPercentage > 0) {
+            unitPrice = unitPrice * (1 - authCheck[0].discountPercentage / 100);
+          }
+        } else if (req.user.role === 'USER') {
+          if (product[0].bulkPricing && typeof product[0].bulkPricing === 'object') {
+            const tiers = Object.entries(product[0].bulkPricing)
+              .map(([q, d]) => ({ minQuantity: Number(q), discount: Number(d) }))
+              .sort((a, b) => b.minQuantity - a.minQuantity);
+            for (const tier of tiers) {
+              if (item.quantity >= tier.minQuantity) {
+                unitPrice = product[0].basePrice * (1 - tier.discount / 100);
+                break;
+              }
+            }
+          }
+        }
+
+        subtotal += unitPrice * item.quantity;
+        verifiedItems.push({ ...item, price: unitPrice });
+      }
+
+      const tax = subtotal * 0.18;
+      const totalAmount = Number((subtotal + tax).toFixed(2));
+
       const newOrder = await tx.insert(orders).values({
         userId,
         dealerProfileId: dealerId,
@@ -55,13 +81,15 @@ export const checkoutCart = async (req: AuthRequest, res: Response): Promise<voi
         shippingCountry: shippingAddress.country || 'India',
       }).returning();
 
-      for (const item of items) {
+      for (const item of verifiedItems) {
         await tx.insert(orderItems).values({
           orderId: newOrder[0].id,
           productId: item.productId,
           quantity: item.quantity,
           price: item.price
         });
+        
+        await tx.update(cartItems).set({ price: item.price }).where(eq(cartItems.id, item.id));
       }
 
       const razorpayOrder = await createRazorpayOrder(totalAmount, newOrder[0].id);
@@ -72,8 +100,8 @@ export const checkoutCart = async (req: AuthRequest, res: Response): Promise<voi
     });
 
     res.status(201).json({ order: result.order, razorpayOrder: result.razorpayOrder });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+  } catch (error: any) {
+    res.status(400).json({ message: error.message || 'Server error during checkout' });
   }
 };
 
